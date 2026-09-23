@@ -77,8 +77,15 @@ h3{font-size:19px;font-weight:600}
 .chip i{width:12px;height:12px;border-radius:50%;display:inline-block;border:1px solid rgba(0,0,0,.4)}
 .chip.on{background:var(--paper);color:var(--ink);border-color:var(--paper)}
 .shape{display:flex;gap:8px;align-items:center;pointer-events:auto;margin-bottom:8px}
-#shapeChip{flex:1;justify-content:center}
-#shapeChip[aria-expanded="true"]{border-color:var(--accent2);color:var(--accent2)}
+#discChip,#shapeChip{flex:1;justify-content:center;min-width:0}
+#discChip[aria-expanded="true"],#shapeChip[aria-expanded="true"]{border-color:var(--accent2);color:var(--accent2)}
+.sidebtns{position:absolute;left:12px;top:calc(max(10px,env(safe-area-inset-top)) + 102px);display:flex;flex-direction:column;gap:6px}
+/* Once the throw is away the screen belongs to the disc. Everything else fades out until you are back on
+   the tee — aiming needs the HUD and the controls, watching a flight does not. Faded rather than removed
+   so nothing jumps, and pointer-events go with it so a stray tap cannot hit a control you cannot see. */
+.hud,.bottom,.minimap,.sidebtns,.chchip{transition:opacity .28s ease}
+#game.flying .hud,#game.flying .bottom,#game.flying .minimap,#game.flying .sidebtns,#game.flying .chchip{opacity:0;pointer-events:none}
+#game.flying .bottom *,#game.flying .sidebtns *,#game.flying .hud *{pointer-events:none}
 .bend{display:flex;align-items:center;gap:6px;pointer-events:auto;margin-bottom:8px;font-family:var(--display);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--paper2);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
 .bend input{flex:1;accent-color:var(--accent2);margin:0}
 #swing{height:27vh;min-height:170px;border-radius:12px;border:1px dashed var(--line);position:relative;pointer-events:none;display:flex;align-items:center;gap:10px;padding:10px;background:linear-gradient(180deg,rgba(9,20,14,.1),rgba(9,20,14,.55))}
@@ -272,18 +279,19 @@ select{font:inherit;font-family:var(--display);font-weight:600;letter-spacing:.0
     <div class="card windcard"><svg viewBox="0 0 40 40" id="windArrow"><path d="M20 4 L30 22 L22 19 L22 36 L18 36 L18 19 L10 22 Z" fill="#f2c230"/></svg><div class="big" id="hudWind">8 mph</div></div>
   </div>
   <div class="minimap"><canvas id="mini" width="168" height="300"></canvas></div>
-  <div style="position:absolute;left:12px;top:calc(max(10px,env(safe-area-inset-top)) + 102px);display:flex;flex-direction:column;gap:6px"><button class="iconbtn" id="btnMenu" title="Menu">Menu</button></div>
+  <div class="sidebtns"><button class="iconbtn" id="btnMenu" title="Menu">Menu</button></div>
   <button class="btn small replaybtn" id="btnReplay" hidden>▶ Replay</button>
   <div class="replaytag" id="replayTag" hidden><span>Replay</span><b id="replayTxt">Slow motion</b></div>
   <div class="chchip" id="chChip" hidden><div class="g" id="chGoal"></div><div class="s" id="chState"></div><div id="chBest"></div></div>
   <div class="toast" id="toast"></div>
   <div class="bottom">
-    <div class="discs" id="discs"></div>
+    <div class="discs" id="discs" hidden></div>
+    <div class="bend" id="bendRow" hidden><span>Hyzer</span><input type="range" id="bend" min="-100" max="100" value="0" step="5" aria-label="Shot shape"><span>Anhyzer</span></div>
     <div class="shape">
+      <button class="chip" id="discChip" aria-expanded="false"><i id="discSw"></i><b id="discVal">Driver</b></button>
       <button class="chip" id="handChip">Backhand</button>
       <button class="chip" id="shapeChip" aria-expanded="false">Shape · <b id="shapeVal">Flat</b></button>
     </div>
-    <div class="bend" id="bendRow" hidden><span>Hyzer</span><input type="range" id="bend" min="-100" max="100" value="0" step="5" aria-label="Shot shape"><span>Anhyzer</span></div>
     <div id="swing">
       <canvas id="meter" width="240" height="240"></canvas>
       <div class="readout"><div class="hint" id="swingHint">Hold for power, flick forward to throw</div><div class="stats" id="swingStats"><span><b id="stPower">–</b>power</span><span><b id="stTempo">–</b>flick</span><span><b id="stLine">–</b>line</span></div></div>
@@ -2029,7 +2037,7 @@ function loadHole(i){
   const r=mulberry(hole.seed+7);const mph=lerp(g.park.windBase[0],g.park.windBase[1],r());const a=r()*Math.PI*2;
   g.windBase={a,mph};applyWind();
   g.player={x:g.world.tee.x,y:g.world.tee.y,z:g.world.tee.z};
-  g.discIdx=hole.par>=4?0:1;g.aim=aimToBasket();g.animT=0;g.bend=0;$('#bend').value=0;syncShape();
+  g.discIdx=hole.par>=4?0:1;g.aim=aimToBasket();g.animT=0;g.bend=0;$('#bend').value=0;syncShape();closePanels();
   $('#hudHole').textContent='H'+hole.n;$('#hudPar').textContent='Par '+hole.par;const _tag=(hole.shape?hole.shape.short:'')+elevTag(hole);$('#hudLoc').textContent=[hole.loc,_tag].filter(Boolean).join(' · ');$('#hudLoc').hidden=!(hole.loc||_tag);$('#hudLen').textContent=Math.round(hole.len*FT);$('#hudWind').textContent=Math.round(g.wind.mph)+' mph';
   renderDiscChips();updateHud();resetStats();replayReset();$('#btnReplay').hidden=true;cineReset();
   startTour();
@@ -2101,16 +2109,18 @@ function updateHud(){
   $('#hudScore').textContent=fmtScore(total);$('#hudThru').textContent='Stroke '+(g.strokes+1);
   const wa=Math.atan2(g.wind.x,g.wind.z);const rel=(wa-g.aim)*180/Math.PI;$('#windArrow').style.transform=`rotate(${-rel}deg)`;
 }
-function renderDiscChips(){const el=$('#discs');el.innerHTML='';DISCS.forEach((d,i)=>{const b=document.createElement('button');b.className='chip'+(i===Game.discIdx?' on':'');b.innerHTML=`<i style="background:${d.color}"></i>${d.short}`;b.addEventListener('click',()=>{Game.discIdx=i;renderDiscChips();Game.previewDirty=true;});el.appendChild(b);});
+function renderDiscChips(){const el=$('#discs');el.innerHTML='';DISCS.forEach((d,i)=>{const b=document.createElement('button');b.className='chip'+(i===Game.discIdx?' on':'');b.innerHTML=`<i style="background:${d.color}"></i>${d.short}`;b.addEventListener('click',()=>{Game.discIdx=i;renderDiscChips();Game.previewDirty=true;setPanel('#discs','#discChip',false);});el.appendChild(b);});
+  const d=DISCS[Game.discIdx];$('#discVal').textContent=d.short;$('#discSw').style.background=d.color;
   $('#handChip').textContent=Game.hand===1?'Backhand':'Forehand';}
+// The disc list and the shape slider are the same thing: a panel under a chip that reports its value.
+function setPanel(panel,chip,open){$(panel).hidden=!open;$(chip).setAttribute('aria-expanded',String(!!open));}
+function closePanels(){setPanel('#discs','#discChip',false);setPanel('#bendRow','#shapeChip',false);}
 $('#handChip').addEventListener('click',()=>{Game.hand=-Game.hand;renderDiscChips();Game.previewDirty=true;});
 function shapeLabel(v){const n=Math.round(Math.abs(v)*100);if(n<5)return 'Flat';return (v<0?'Hyzer ':'Anhyzer ')+n;}
 function syncShape(){$('#shapeVal').textContent=shapeLabel(Game.bend);}
 $('#bend').addEventListener('input',e=>{Game.bend=+e.target.value/100;Game.previewDirty=true;syncShape();});
-$('#shapeChip').addEventListener('click',()=>{
-  const row=$('#bendRow'),open=row.hidden;
-  row.hidden=!open;$('#shapeChip').setAttribute('aria-expanded',String(open));
-});
+$('#shapeChip').addEventListener('click',()=>{const open=$('#bendRow').hidden;closePanels();setPanel('#bendRow','#shapeChip',open);});
+$('#discChip').addEventListener('click',()=>{const open=$('#discs').hidden;closePanels();setPanel('#discs','#discChip',open);});
 function toast(a,b){const t=$('#toast');t.innerHTML=a+(b?`<small>${b}</small>`:'');t.classList.add('on');}
 function hideToast(){$('#toast').classList.remove('on');}
 function resetStats(){$('#stPower').textContent='–';$('#stTempo').textContent='–';$('#stLine').textContent='–';$('#swingHint').textContent='Hold for power, flick forward to throw';}
@@ -2233,7 +2243,7 @@ function release(){
   $('#swingHint').textContent=power>1?'Over-swing':Math.abs(deg)<=3&&power>=0.88?'Pure':'';
   throwDisc(power,lineErr,hyzerErr);
 }
-function throwDisc(power,err,hyzerErr){const g=Game;g.phase='windup';g.animT=0;g.pending={power,err,hyzerErr};sfx('whoosh');g.preview.count=0;g.landing.visible=false;}
+function throwDisc(power,err,hyzerErr){const g=Game;closePanels();g.phase='windup';syncChrome();g.animT=0;g.pending={power,err,hyzerErr};sfx('whoosh');g.preview.count=0;g.landing.visible=false;}
 function shapeOpts(extra){const g=Game;return {spin:g.hand,hyzer:g.bend*0.45*g.hand+(extra||0)};}
 function launch(){
   const g=Game,{power,err,hyzerErr}=g.pending;const disc=DISCS[g.discIdx];
@@ -2332,6 +2342,10 @@ function drawMini(){
   const d=aimDir();mctx.strokeStyle='rgba(243,236,220,.7)';mctx.setLineDash([3,3]);mctx.lineWidth=1;mctx.beginPath();mctx.moveTo(X(g.player.x),Y(g.player.z));mctx.lineTo(X(g.player.x+d.x*60),Y(g.player.z+d.z*60));mctx.stroke();mctx.setLineDash([]);
   mctx.fillStyle='#fff';mctx.beginPath();mctx.arc(X(p.x),Y(p.z),3.2,0,Math.PI*2);mctx.fill();
 }
+// Aiming needs the HUD and the controls; watching a flight does not. These are the phases where the
+// screen belongs to the disc.
+const FLYING_PHASES=['windup','flight','result','replay','group'];
+function syncChrome(){$('#game').classList.toggle('flying',FLYING_PHASES.indexOf(Game.phase)>=0);}
 // ---------- main loop ----------
 let last=performance.now();
 function frame(now){
@@ -2348,7 +2362,7 @@ function frame(now){
   renderer.render(scene,camera);
 }
 function gameTick(dt){
-  const g=Game;if(!g.world)return;Cine.dt=dt;g.time+=dt;g.world.update(dt,g.time);
+  const g=Game;if(!g.world)return;Cine.dt=dt;syncChrome();g.time+=dt;g.world.update(dt,g.time);
   if(g.wildlifeAt&&g.time>g.wildlifeAt&&g.phase==='aim'&&!g.tapIn){g.wildlifeAt=null;const kind=Math.random()<faunaOf(g.park).bear?'bear':'deer';const dir=Math.random()<0.5?1:-1;const z=g.player.z+35+Math.random()*45;if(z<g.world.len-10){const a=makeAnimal(kind,g.world,-dir*40,z,dir,g.park);g.world.group.add(a);g.world.animated.push(a);}}
   if(g.phase==='intro'&&g.tour){
     const T=g.tour;T.t+=dt/T.dur;const u=smooth(clamp(T.t,0,1));
