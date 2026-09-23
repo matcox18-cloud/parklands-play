@@ -2616,16 +2616,20 @@ function startReplay(){
   const a=R.samples[0],b=R.samples[R.samples.length-1];const len=Math.hypot(b.x-a.x,b.z-a.z);
   const dx=(b.x-a.x)/(len||1),dz=(b.z-a.z)/(len||1);const side=(Math.random()<0.5?1:-1);
   // cam A: low behind the thrower, watching the disc leave. cam B: landing cam beyond the lie / behind the basket, looking back up the line.
-  const A=new THREE.Vector3(a.x-dx*3.2+(-dz)*side*1.2,a.y+1.7,a.z-dz*3.2+dx*side*1.2);
+  const A=new THREE.Vector3(a.x-dx*7.5+(-dz)*side*2.4,a.y+0.35,a.z-dz*7.5+dx*side*2.4);
   const bb=R.holed?{x:g.world.basket.x,y:g.world.basket.y,z:g.world.basket.z}:b;
   const B=new THREE.Vector3(bb.x+dx*5.5+(-dz)*side*2.2,bb.y+2.2,bb.z+dz*5.5+dx*side*2.2);
   R.cam={A,B,cut:0.48,ease:A.clone(),len};
+  R.avWas=g.av.visible;g.av.visible=true;
   g.phase='replay';$('#game').classList.add('replay');letterbox(true);lens(44);$('#replayTag').hidden=false;$('#replayTxt').textContent=R.holed?'Slow motion · in the chains':'Slow motion';
   $('#btnReplay').hidden=true;hideToast();
 }
-function endReplay(){const g=Game,R=Replay;R.active=false;$('#game').classList.remove('replay');letterbox(false);lens(FOV_BASE);$('#replayTag').hidden=true;g.phase='result';g.animT=99;g.celebrate=0;}
+function endReplay(){const g=Game,R=Replay;R.active=false;$('#game').classList.remove('replay');letterbox(false);lens(FOV_BASE);$('#replayTag').hidden=true;
+  if(R.avWas!==undefined){g.av.visible=R.avWas;R.avWas=undefined;}
+  g.phase='result';g.animT=99;g.celebrate=0;}
 function replayTick(dt){
   const g=Game,R=Replay;const last=R.samples[R.samples.length-1].t;
+  if(g.av.visible)poseThrow(g.av,1,1);
   // Speed ramp. A flat rate gives the arrival no more weight than the middle of the flight, so run
   // near full replay speed early and ease down to a third of it over the last quarter.
   const prog=clamp(R.t/last,0,1);
