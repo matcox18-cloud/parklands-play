@@ -77,7 +77,9 @@ h3{font-size:19px;font-weight:600}
 .chip i{width:12px;height:12px;border-radius:50%;display:inline-block;border:1px solid rgba(0,0,0,.4)}
 .chip.on{background:var(--paper);color:var(--ink);border-color:var(--paper)}
 .shape{display:flex;gap:8px;align-items:center;pointer-events:auto;margin-bottom:8px}
-.bend{flex:1;display:flex;align-items:center;gap:6px;font-family:var(--display);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--paper2);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
+#shapeChip{flex:1;justify-content:center}
+#shapeChip[aria-expanded="true"]{border-color:var(--accent2);color:var(--accent2)}
+.bend{display:flex;align-items:center;gap:6px;pointer-events:auto;margin-bottom:8px;font-family:var(--display);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--paper2);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
 .bend input{flex:1;accent-color:var(--accent2);margin:0}
 #swing{height:27vh;min-height:170px;border-radius:12px;border:1px dashed var(--line);position:relative;pointer-events:none;display:flex;align-items:center;gap:10px;padding:10px;background:linear-gradient(180deg,rgba(9,20,14,.1),rgba(9,20,14,.55))}
 #meter{width:120px;height:120px;flex:0 0 120px}
@@ -270,7 +272,7 @@ select{font:inherit;font-family:var(--display);font-weight:600;letter-spacing:.0
     <div class="card windcard"><svg viewBox="0 0 40 40" id="windArrow"><path d="M20 4 L30 22 L22 19 L22 36 L18 36 L18 19 L10 22 Z" fill="#f2c230"/></svg><div class="big" id="hudWind">8 mph</div></div>
   </div>
   <div class="minimap"><canvas id="mini" width="168" height="300"></canvas></div>
-  <div style="position:absolute;left:12px;top:calc(max(10px,env(safe-area-inset-top)) + 102px);display:flex;flex-direction:column;gap:6px"><button class="iconbtn" id="btnCam" title="Camera">Cam</button><button class="iconbtn" id="btnMenu" title="Menu">Menu</button><button class="iconbtn" id="btnSnd" title="Sound on/off">Snd</button><button class="iconbtn" id="btnLB" title="Leaderboard" hidden>Board</button></div>
+  <div style="position:absolute;left:12px;top:calc(max(10px,env(safe-area-inset-top)) + 102px);display:flex;flex-direction:column;gap:6px"><button class="iconbtn" id="btnMenu" title="Menu">Menu</button></div>
   <button class="btn small replaybtn" id="btnReplay" hidden>▶ Replay</button>
   <div class="replaytag" id="replayTag" hidden><span>Replay</span><b id="replayTxt">Slow motion</b></div>
   <div class="chchip" id="chChip" hidden><div class="g" id="chGoal"></div><div class="s" id="chState"></div><div id="chBest"></div></div>
@@ -279,8 +281,9 @@ select{font:inherit;font-family:var(--display);font-weight:600;letter-spacing:.0
     <div class="discs" id="discs"></div>
     <div class="shape">
       <button class="chip" id="handChip">Backhand</button>
-      <div class="bend"><span>Hyzer</span><input type="range" id="bend" min="-100" max="100" value="0" step="5" aria-label="Shot shape"><span>Anhyzer</span></div>
+      <button class="chip" id="shapeChip" aria-expanded="false">Shape · <b id="shapeVal">Flat</b></button>
     </div>
+    <div class="bend" id="bendRow" hidden><span>Hyzer</span><input type="range" id="bend" min="-100" max="100" value="0" step="5" aria-label="Shot shape"><span>Anhyzer</span></div>
     <div id="swing">
       <canvas id="meter" width="240" height="240"></canvas>
       <div class="readout"><div class="hint" id="swingHint">Hold for power, flick forward to throw</div><div class="stats" id="swingStats"><span><b id="stPower">–</b>power</span><span><b id="stTempo">–</b>flick</span><span><b id="stLine">–</b>line</span></div></div>
@@ -309,6 +312,9 @@ select{font:inherit;font-family:var(--display);font-weight:600;letter-spacing:.0
   <div class="overlay" id="menuOverlay"><div class="panel stack">
     <h2>Paused</h2>
     <button class="btn" id="mResume">Resume</button>
+    <button class="btn secondary" id="mCam">Camera: <b id="mCamLbl">Close</b></button>
+    <button class="btn secondary" id="mSnd">Sound: <b id="mSndLbl">On</b></button>
+    <button class="btn secondary" id="mLB" hidden>Leaderboard</button>
     <button class="btn secondary" id="mDiff">Difficulty: <b id="mDiffLbl">Medium</b></button>
     <button class="btn secondary" id="mQuit">Quit to parks</button>
   </div></div>
@@ -1978,7 +1984,7 @@ const discMesh=(()=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(0.105,0.1
 function startRound(park,holes,key,name){
   Game.challenge=null;Game.chDone=false;const _cc=$('#chChip');if(_cc)_cc.hidden=true;
   Object.assign(Game,{on:true,park,holes,idx:0,scores:[],strokes:0,courseKey:key,courseName:name,discIdx:0});
-  Game.tourney=null;$('#btnLB').hidden=true;$('#hudPos').textContent='';if(App.mode==='tournament')initTourney();
+  Game.tourney=null;$('#hudPos').textContent='';if(App.mode==='tournament')initTourney();
   show('game');$('#hudPark').textContent=name;renderDiscChips();loadHole(0);
 }
 function elevTag(h){const d=h.shape&&h.shape.drop?Math.round(h.shape.drop*3.28084):0;return Math.abs(d)>=8?` · ${d<0?'↓':'↑'}${Math.abs(d)} ft`:'';}
@@ -2023,7 +2029,7 @@ function loadHole(i){
   const r=mulberry(hole.seed+7);const mph=lerp(g.park.windBase[0],g.park.windBase[1],r());const a=r()*Math.PI*2;
   g.windBase={a,mph};applyWind();
   g.player={x:g.world.tee.x,y:g.world.tee.y,z:g.world.tee.z};
-  g.discIdx=hole.par>=4?0:1;g.aim=aimToBasket();g.animT=0;g.bend=0;$('#bend').value=0;
+  g.discIdx=hole.par>=4?0:1;g.aim=aimToBasket();g.animT=0;g.bend=0;$('#bend').value=0;syncShape();
   $('#hudHole').textContent='H'+hole.n;$('#hudPar').textContent='Par '+hole.par;const _tag=(hole.shape?hole.shape.short:'')+elevTag(hole);$('#hudLoc').textContent=[hole.loc,_tag].filter(Boolean).join(' · ');$('#hudLoc').hidden=!(hole.loc||_tag);$('#hudLen').textContent=Math.round(hole.len*FT);$('#hudWind').textContent=Math.round(g.wind.mph)+' mph';
   renderDiscChips();updateHud();resetStats();replayReset();$('#btnReplay').hidden=true;cineReset();
   startTour();
@@ -2098,7 +2104,13 @@ function updateHud(){
 function renderDiscChips(){const el=$('#discs');el.innerHTML='';DISCS.forEach((d,i)=>{const b=document.createElement('button');b.className='chip'+(i===Game.discIdx?' on':'');b.innerHTML=`<i style="background:${d.color}"></i>${d.short}`;b.addEventListener('click',()=>{Game.discIdx=i;renderDiscChips();Game.previewDirty=true;});el.appendChild(b);});
   $('#handChip').textContent=Game.hand===1?'Backhand':'Forehand';}
 $('#handChip').addEventListener('click',()=>{Game.hand=-Game.hand;renderDiscChips();Game.previewDirty=true;});
-$('#bend').addEventListener('input',e=>{Game.bend=+e.target.value/100;Game.previewDirty=true;});
+function shapeLabel(v){const n=Math.round(Math.abs(v)*100);if(n<5)return 'Flat';return (v<0?'Hyzer ':'Anhyzer ')+n;}
+function syncShape(){$('#shapeVal').textContent=shapeLabel(Game.bend);}
+$('#bend').addEventListener('input',e=>{Game.bend=+e.target.value/100;Game.previewDirty=true;syncShape();});
+$('#shapeChip').addEventListener('click',()=>{
+  const row=$('#bendRow'),open=row.hidden;
+  row.hidden=!open;$('#shapeChip').setAttribute('aria-expanded',String(open));
+});
 function toast(a,b){const t=$('#toast');t.innerHTML=a+(b?`<small>${b}</small>`:'');t.classList.add('on');}
 function hideToast(){$('#toast').classList.remove('on');}
 function resetStats(){$('#stPower').textContent='–';$('#stTempo').textContent='–';$('#stLine').textContent='–';$('#swingHint').textContent='Hold for power, flick forward to throw';}
@@ -2154,9 +2166,15 @@ function cameraFollowDisc(fl){
   dampV(camState.pos,target,5);dampV(camState.look,new THREE.Vector3(p.x,p.y,p.z),13);
   camera.position.copy(camState.pos);camera.lookAt(camState.look);
 }
-$('#btnSnd').addEventListener('click',()=>{Snd.unlock();Snd.setMuted(!Snd.muted);$('#btnSnd').textContent=Snd.muted?'Mute':'Snd';});$('#btnSnd').textContent=Snd.muted?'Mute':'Snd';
-$('#btnCam').addEventListener('click',()=>{Game.camMode=(Game.camMode+1)%2;});
-$('#btnMenu').addEventListener('click',()=>{$('#menuOverlay').classList.add('on');});
+const CAM_NAMES=['Close','Wide'];
+function syncMenu(){
+  $('#mCamLbl').textContent=CAM_NAMES[Game.camMode]||CAM_NAMES[0];
+  $('#mSndLbl').textContent=Snd.muted?'Off':'On';
+  $('#mLB').hidden=!(Game.tourney&&Game.phase!=='intro');
+}
+$('#mSnd').addEventListener('click',()=>{Snd.unlock();Snd.setMuted(!Snd.muted);syncMenu();});
+$('#mCam').addEventListener('click',()=>{Game.camMode=(Game.camMode+1)%2;syncMenu();});
+$('#btnMenu').addEventListener('click',()=>{syncMenu();$('#menuOverlay').classList.add('on');});
 $('#mResume').addEventListener('click',()=>{$('#menuOverlay').classList.remove('on');});
 $('#mQuit').addEventListener('click',()=>{$('#menuOverlay').classList.remove('on');Game.on=false;show('parks');});
 $('#scAgain').addEventListener('click',()=>{$('#scoreOverlay').classList.remove('on');startRound(Game.park,Game.holes,Game.courseKey,Game.courseName);});
@@ -2419,7 +2437,7 @@ function initTourney(){
   // Two of the field are drawn as your playing group and stay with you for the round.
   const gi=[];while(gi.length<2){const k=Math.floor(r()*g.tourney.pros.length);if(gi.indexOf(k)<0)gi.push(k);}
   g.tourney.groupIdx=gi;
-  $('#btnLB').hidden=false;$('#hudPos').textContent='';
+  $('#hudPos').textContent='';
 }
 function tourneyEntries(){
   const g=Game,T=g.tourney;const you={name:(App.avatar.name||'You'),me:true,scores:g.scores};
@@ -2454,7 +2472,7 @@ function showLeaderboard(afterHole){
   $('#lbNext').onclick=()=>{$('#lbOverlay').classList.remove('on');if(afterHole){if(g.idx+1<g.holes.length)loadHole(g.idx+1);else finishRound();}};
   $('#lbOverlay').classList.add('on');
 }
-$('#btnLB').addEventListener('click',()=>{if(Game.tourney&&Game.phase!=='intro')showLeaderboard(false);});
+$('#mLB').addEventListener('click',()=>{if(Game.tourney&&Game.phase!=='intro'){$('#menuOverlay').classList.remove('on');showLeaderboard(false);}});
 function tourneyStandingsHtml(){
   const list=tourneyEntries();const me=list.find(e=>e.me);
   const prize=[1000,600,400,250,150,100,75,50];
@@ -2724,7 +2742,7 @@ function startChallenge(c){
   App.mode='casual';
   Object.assign(Game,{on:true,park,holes:[hole],idx:0,scores:[],strokes:0,courseKey:'ch:'+c.id,courseName:c.name,discIdx:0});
   Game.tourney=null;Game.challenge=c;Game.chDone=false;
-  $('#btnLB').hidden=true;$('#hudPos').textContent='';
+  $('#hudPos').textContent='';
   show('game');$('#hudPark').textContent=park.name;renderDiscChips();loadHole(0);
   $('#chChip').hidden=false;updateChChip();
   toast(c.name,c.brief+'<br>'+chGoalText(c));
