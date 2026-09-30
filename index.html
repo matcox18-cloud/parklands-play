@@ -113,7 +113,25 @@ th{color:var(--muted);font-weight:600;letter-spacing:.08em;font-size:12px}
 td.u{color:var(--meadow)}td.o{color:var(--danger)}td.e{color:var(--accent2)}
 /* character */
 #character{gap:10px}
-#character .preview{flex:0 0 34vh;border-radius:10px;overflow:hidden;background:var(--ink2)}
+#character .preview{flex:0 0 34vh;border-radius:10px;overflow:hidden;background:var(--ink2);position:relative;touch-action:none}
+#character .preview canvas{touch-action:none}
+.pvhint{position:absolute;left:10px;bottom:10px;font-family:var(--display);text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--paper2);opacity:.75;pointer-events:none;transition:opacity .3s}
+.pvhint.gone{opacity:0}
+.pvpose{position:absolute;right:10px;bottom:10px;background:var(--panel);border:1px solid var(--line);color:var(--paper);border-radius:999px;padding:6px 14px;font-family:var(--display);text-transform:uppercase;letter-spacing:.1em;font-size:11px;cursor:pointer}
+.pvpose.on{border-color:var(--accent2);color:var(--accent2)}
+/* creator: tabs over stacked panes, so one group of choices is visible at a time instead of a long scroll */
+.tabs{display:flex;gap:6px;margin-bottom:2px}
+.tab{flex:1;background:transparent;border:1px solid var(--line);color:var(--paper2);border-radius:8px;padding:8px 4px;font-family:var(--display);text-transform:uppercase;letter-spacing:.08em;font-size:11px;cursor:pointer}
+.tab.on{background:var(--panel);border-color:var(--accent2);color:var(--accent2)}
+.pane{display:none;flex-direction:column;gap:6px}
+.pane.on{display:flex}
+.val{color:var(--accent2);font-weight:800}
+.opts{display:flex;gap:6px;flex-wrap:wrap}
+.opt{background:var(--panel);border:1px solid var(--line);color:var(--paper);border-radius:8px;padding:8px 12px;font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-size:12px;cursor:pointer}
+.opt.on{border-color:var(--accent2);color:var(--accent2)}
+.sw{display:flex;gap:8px;flex-wrap:wrap}
+.swb{width:38px;height:38px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}
+.swb.on{border-color:var(--accent2);box-shadow:0 0 0 2px rgba(242,194,48,.28)}
 #character .preview canvas{width:100%;height:100%;display:block}
 #character .controls{overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-bottom:8px}
 .presets{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
@@ -251,10 +269,38 @@ select{font:inherit;font-family:var(--display);font-weight:600;letter-spacing:.0
 
 <section id="character" class="screen">
   <div class="topbar"><div><div class="eyebrow">Your player</div><h2 id="charTitle">Your player</h2></div><button class="btn small" id="btnSaveChar">Save</button></div>
-  <div class="preview"><canvas id="pv"></canvas></div>
+  <div class="preview"><canvas id="pv"></canvas>
+    <div class="pvhint" id="pvHint">Drag to turn</div>
+    <button class="pvpose" id="pvPose">Throw</button>
+  </div>
   <div class="controls">
     <div><label class="lbl" for="charName">Name</label><input type="text" id="charName" maxlength="16" placeholder="Player name"></div>
-    <div><label class="lbl">Locker</label><div class="locker" id="locker"></div></div>
+    <div class="tabs" id="charTabs">
+      <button class="tab on" data-tab="body">Body</button>
+      <button class="tab" data-tab="hair">Hair</button>
+      <button class="tab" data-tab="kit">Kit</button>
+      <button class="tab" data-tab="shop">Pro Shop</button>
+    </div>
+    <div class="pane on" data-pane="body">
+      <label class="lbl">Build</label><div class="opts" id="optBuild"></div>
+      <label class="lbl">Height <b id="lblHeight" class="val"></b></label>
+      <input type="range" id="optHeight" min="0" max="100" value="50" step="1" aria-label="Height">
+      <label class="lbl">Skin</label><div class="sw" id="optSkin"></div>
+      <label class="lbl">Throws</label><div class="opts" id="optHand"></div>
+    </div>
+    <div class="pane" data-pane="hair">
+      <label class="lbl">Style</label><div class="opts" id="optHairStyle"></div>
+      <label class="lbl">Colour</label><div class="sw" id="optHairC"></div>
+    </div>
+    <div class="pane" data-pane="kit">
+      <label class="lbl">Preset</label><div class="opts" id="optKit"></div>
+      <label class="lbl">Shirt</label><div class="sw" id="optShirt"></div>
+      <label class="lbl">Shorts</label><div class="sw" id="optShort"></div>
+      <label class="lbl">Shoes</label><div class="sw" id="optShoe"></div>
+    </div>
+    <div class="pane" data-pane="shop">
+      <div class="locker" id="locker"></div>
+    </div>
   </div>
 </section>
 
@@ -1614,7 +1660,14 @@ const AV_H=1.86;                       // world height, feet to crown
 const AV_FRAMES=11;
 const AV_CELEBRATE=8, AV_WALK=9, AV_SAD=10;
 
-// Locker kits are real now rather than art-less placeholders: each is a set of colours the figure wears.
+// Everything the player can be. Kits are presets that fill the four garment colours in one tap; anything
+// set individually afterwards wins, so a kit is a starting point rather than a cage.
+const SKINS=['#f4cfa8','#e3b184','#c68a5e','#a56a42','#7d4a2b','#57341f'];
+const HAIRC=['#241a12','#3f2d1c','#6b4a28','#a8813f','#d8c08a','#8a2f1c','#9aa0a6','#e8e4dc'];
+const HAIR_STYLES=[{id:'short',name:'Short'},{id:'cap',name:'Cap'},{id:'long',name:'Long'},
+                   {id:'bun',name:'Bun'},{id:'curls',name:'Curls'},{id:'bald',name:'Shaved'}];
+const BUILDS=[{id:'slim',name:'Slim',w:0.86},{id:'athletic',name:'Athletic',w:1},{id:'strong',name:'Strong',w:1.18}];
+const HEIGHTS={min:1.62,max:2.02};
 const KITS={
   pro:  {shirt:'#f2f0e8',short:'#23262a',sock:'#f2f0e8',shoe:'#1d2024',skin:'#c68a5e',hair:'#2f2419'},
   park: {shirt:'#4a6b46',short:'#2e3a2c',sock:'#d8d2bc',shoe:'#3b2f23',skin:'#c68a5e',hair:'#2f2419'},
@@ -1631,8 +1684,22 @@ const LOCKER=[
   {id:'pets',name:'Trail Dog',sub:'Follows you down the fairway',price:'$3.99'},
   {id:'bag',name:'Leather Bag',sub:'Carries the disc set',price:'$2.99'},
 ];
-function defaultAvatar(){return {name:'You',kit:'pro'};}
-function kitOf(cfg){return KITS[(cfg&&cfg.kit)||'pro']||KITS.pro;}
+function defaultAvatar(){
+  return {name:'You',kit:'pro',skin:2,hair:0,hairStyle:'short',build:'athletic',height:0.5,hand:1};}
+// A saved player from an older build only has {name,kit}; fill the rest in rather than rendering a
+// figure with no skin tone.
+function normAvatar(a){const d=defaultAvatar();return Object.assign(d,a||{});}
+function avHeight(cfg){return HEIGHTS.min+(HEIGHTS.max-HEIGHTS.min)*clamp(cfg.height!==undefined?cfg.height:0.5,0,1);}
+function buildOf(cfg){return BUILDS.find(b=>b.id===cfg.build)||BUILDS[1];}
+// A garment colour is whatever the player set, falling back to the kit preset.
+function kitOf(cfg){
+  const base=KITS[(cfg&&cfg.kit)||'pro']||KITS.pro;
+  if(!cfg)return base;
+  const out=Object.assign({},base);
+  for(const k of ['shirt','short','sock','shoe'])if(cfg[k])out[k]=cfg[k];
+  if(cfg.skin!==undefined)out.skin=SKINS[cfg.skin]||SKINS[2];
+  if(cfg.hair!==undefined)out.hair=HAIRC[cfg.hair]||HAIRC[0];
+  return out;}
 
 // A limb segment hangs DOWN from its pivot, so a joint rotation about x swings it forward or back the way
 // a real one does and the parent/child chain needs no offsets of its own.
@@ -1644,7 +1711,10 @@ function avBox(w,h,d,mat,y){
   const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.y=y;m.castShadow=true;m.receiveShadow=true;return m;}
 
 function buildAvatar(cfg){
+  cfg=normAvatar(cfg);
   const k=kitOf(cfg);
+  const B=buildOf(cfg).w;                       // shoulder and limb thickness
+  const S=avHeight(cfg)/AV_H;                   // whole figure scales to the chosen height
   const M=c=>new THREE.MeshLambertMaterial({color:C(c)});
   const mShirt=M(k.shirt),mShort=M(k.short),mSkin=M(k.skin),mShoe=M(k.shoe),mSock=M(k.sock),mHair=M(k.hair);
   const g=new THREE.Group();
@@ -1652,29 +1722,30 @@ function buildAvatar(cfg){
   // hips sit at the top of the legs; everything above hangs off the torso joint so a turn of the body
   // carries the arms and head with it, which is what makes the throw read as a throw.
   const hips=new THREE.Object3D();hips.position.y=0.92;g.add(hips);
-  hips.add(avBox(0.30,0.16,0.19,mShort,0));
+  hips.add(avBox(0.30*B,0.16,0.19*B,mShort,0));
 
   const torso=new THREE.Object3D();hips.add(torso);
-  torso.add(avBox(0.34,0.52,0.21,mShirt,0.26));
+  torso.add(avBox(0.34*B,0.52,0.21*B,mShirt,0.26));
   const neck=new THREE.Object3D();neck.position.y=0.54;torso.add(neck);
   const head=new THREE.Mesh(new THREE.SphereGeometry(0.115,10,8),mSkin);head.position.y=0.10;head.castShadow=true;neck.add(head);
-  const hair=new THREE.Mesh(new THREE.SphereGeometry(0.121,10,8,0,Math.PI*2,0,Math.PI*0.62),mHair);hair.position.y=0.113;neck.add(hair);
+  buildFace(neck,mHair,k.skin);
+  buildHair(neck,cfg.hairStyle,mHair,mShirt);
 
   const arms={},legs={};
   for(const side of ['L','R']){
     const sx=side==='L'?-1:1;
-    const sh=new THREE.Object3D();sh.position.set(sx*0.185,0.46,0);torso.add(sh);
-    const up=avSeg(0.28,0.052,0.045,mShirt);sh.add(up);
+    const sh=new THREE.Object3D();sh.position.set(sx*0.185*B,0.46,0);torso.add(sh);
+    const up=avSeg(0.28,0.052*B,0.045*B,mShirt);sh.add(up);
     const el=new THREE.Object3D();el.position.y=-0.28;up.add(el);
-    const fo=avSeg(0.26,0.043,0.036,mSkin);el.add(fo);
+    const fo=avSeg(0.26,0.043*B,0.036*B,mSkin);el.add(fo);
     const hand=new THREE.Object3D();hand.position.y=-0.26;fo.add(hand);
     hand.add(new THREE.Mesh(new THREE.SphereGeometry(0.045,7,6),mSkin));
     arms[side]={sh,el,hand};
 
     const hip=new THREE.Object3D();hip.position.set(sx*0.085,0,0);hips.add(hip);
-    const th=avSeg(0.44,0.072,0.058,mShort);hip.add(th);
+    const th=avSeg(0.44,0.072*B,0.058*B,mShort);hip.add(th);
     const kn=new THREE.Object3D();kn.position.y=-0.44;th.add(kn);
-    const sn=avSeg(0.42,0.055,0.042,mSock);kn.add(sn);
+    const sn=avSeg(0.42,0.055*B,0.042*B,mSock);kn.add(sn);
     const foot=new THREE.Mesh(new THREE.BoxGeometry(0.095,0.06,0.20),mShoe);
     foot.position.set(0,-0.45,0.045);foot.castShadow=true;kn.add(foot);
     legs[side]={hip,kn};
@@ -1685,10 +1756,52 @@ function buildAvatar(cfg){
     new THREE.MeshBasicMaterial({map:duffTex(),transparent:true,opacity:0.55,depthWrite:false,color:C('#26251d')}));
   sh.rotation.x=-Math.PI/2;sh.position.y=0.035;sh.renderOrder=1;g.add(sh);
 
+  g.scale.setScalar(S);
   g.userData.parts={hips,torso,neck,arms,legs,handR:arms.R.hand};
+  g.userData.cfg=cfg;g.userData.height=avHeight(cfg);
   g.userData.frame=-1;
   setFrame(g,0);
   return g;}
+
+// A head with no features looks identical from the front and the back, which made the creator's turn
+// control useless and the figure read as facing away on every screen. These are four small pieces — not a
+// face so much as enough of one to tell which way someone is looking.
+function buildFace(neck,mHair,skinHex){
+  const dark=new THREE.MeshLambertMaterial({color:C('#1b1712')});
+  const mSkin=new THREE.MeshLambertMaterial({color:C(skinHex)});
+  for(const sx of [-1,1]){
+    const eye=new THREE.Mesh(new THREE.SphereGeometry(0.019,7,6),dark);
+    eye.position.set(sx*0.044,0.112,0.098);neck.add(eye);
+    const brow=new THREE.Mesh(new THREE.BoxGeometry(0.040,0.010,0.012),mHair);
+    brow.position.set(sx*0.045,0.142,0.100);neck.add(brow);
+  }
+  const nose=new THREE.Mesh(new THREE.ConeGeometry(0.018,0.042,6),mSkin);
+  nose.rotation.x=Math.PI/2;nose.position.set(0,0.092,0.109);neck.add(nose);
+  const mouth=new THREE.Mesh(new THREE.BoxGeometry(0.044,0.009,0.010),dark);
+  mouth.position.set(0,0.052,0.103);neck.add(mouth);}
+
+// Hair styles are built from the same few primitives as the body, so a new one is a case here and a name
+// in HAIR_STYLES rather than an asset.
+function buildHair(neck,style,mHair,mShirt){
+  const cap=(r,phi)=>new THREE.Mesh(new THREE.SphereGeometry(r,10,8,0,Math.PI*2,0,Math.PI*phi),mHair);
+  if(style==='bald')return;
+  if(style==='cap'){
+    const c=cap(0.122,0.55);c.position.y=0.115;c.material=mShirt;neck.add(c);
+    const brim=new THREE.Mesh(new THREE.BoxGeometry(0.19,0.018,0.10),mShirt);
+    brim.position.set(0,0.108,0.115);neck.add(brim);return;
+  }
+  const c=cap(0.121,style==='curls'?0.70:0.62);c.position.y=0.113;neck.add(c);
+  if(style==='long'){
+    const back=new THREE.Mesh(new THREE.BoxGeometry(0.17,0.20,0.07),mHair);
+    back.position.set(0,0.02,-0.07);neck.add(back);
+  }else if(style==='bun'){
+    const bun=new THREE.Mesh(new THREE.SphereGeometry(0.052,8,7),mHair);
+    bun.position.set(0,0.13,-0.10);neck.add(bun);
+  }else if(style==='curls'){
+    for(let i=0;i<7;i++){const a=i/7*Math.PI*2;
+      const b=new THREE.Mesh(new THREE.SphereGeometry(0.043,7,6),mHair);
+      b.position.set(Math.sin(a)*0.085,0.125+Math.cos(a*2)*0.02,Math.cos(a)*0.085);neck.add(b);}
+  }}
 
 // One row per frame, same eleven the sprite had. Each is [torsoY, torsoX, headX, shoulderR(x,y,z),
 // elbowR, shoulderL(x,y,z), elbowL, hipR, kneeR, hipL, kneeL], all radians. A right-handed backhand
@@ -1943,7 +2056,7 @@ let scene=new THREE.Scene();
 function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 addEventListener('resize',resize);resize();
 
-const App={screen:'title',avatar:store('pdg.avatar')||defaultAvatar(),best:store('pdg.best')||{},courses:store('pdg.courses')||[]};
+const App={screen:'title',avatar:normAvatar(store('pdg.avatar')),best:store('pdg.best')||{},courses:store('pdg.courses')||[]};
 function show(id){$$('.screen').forEach(s=>s.classList.toggle('on',s.id===id));App.screen=id;if(id!=='game')Snd.setScene('menu');if(id==='title')startTitleScene();if(id==='character')startCharScene();if(id==='parks')renderParkList();if(id==='designer')Designer.open();}
 $$('[data-nav]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.nav)));
 $('#btnPlay').addEventListener('click',()=>{App.mode='casual';$$('.modes .chip').forEach(c=>c.classList.toggle('on',c.dataset.mode==='casual'));$('#parksEyebrow').textContent='Choose a course';show('parks');});
@@ -1968,7 +2081,7 @@ function startTitleScene(){
   const av=buildAvatar(App.avatar);av.position.set(0,titleWorld.tee.y,0);scene.add(av);
 }
 // ---------- character scene (own canvas) ----------
-let charAv=null,charT=0,charScene=null,charRenderer=null,charCam=null;
+let charAv=null,charT=0,charScene=null,charRenderer=null,charCam=null,charYaw=0,charPose=false;
 function startCharScene(){
   const park=PARKS[3];
   if(!charRenderer){charRenderer=new THREE.WebGLRenderer({canvas:$('#pv'),antialias:true});charRenderer.setPixelRatio(Math.min(devicePixelRatio,2));charRenderer.shadowMap.enabled=true;charRenderer.outputEncoding=THREE.sRGBEncoding;charRenderer.toneMapping=THREE.ACESFilmicToneMapping;charCam=new THREE.PerspectiveCamera(38,1,0.1,500);}
@@ -1980,20 +2093,74 @@ function startCharScene(){
 }
 function rebuildCharAvatar(){
   if(charAv)charScene.remove(charAv);
-  charAv=buildAvatar(App.avatar);charAv.userData.H=AV_H;charScene.add(charAv);}
+  charAv=buildAvatar(App.avatar);charAv.userData.H=charAv.userData.height;charAv.rotation.y=charYaw;charScene.add(charAv);}
+// One helper for every choice row: draw the options, mark the current one, set it and rebuild on tap.
+function charOpts(host,items,current,pick,render){
+  const el=$(host);if(!el)return;el.innerHTML='';
+  items.forEach(it=>{
+    const b=document.createElement('button');
+    render(b,it);
+    b.classList.toggle('on',it.id===current);
+    b.addEventListener('click',()=>{pick(it);rebuildCharAvatar();renderCharControls();});
+    el.appendChild(b);});
+}
+function charSwatches(host,colours,current,pick){
+  charOpts(host,colours.map((c,i)=>({id:i,c})),current,pick,(b,it)=>{
+    b.className='swb';b.style.background=it.c;b.setAttribute('aria-label','Colour '+(it.id+1));});
+}
 function renderCharControls(){
-  const a=App.avatar;$('#charName').value=a.name;
+  const a=App.avatar=normAvatar(App.avatar);
+  $('#charName').value=a.name;
+
+  charOpts('#optBuild',BUILDS,a.build,it=>{a.build=it.id;},(b,it)=>{b.className='opt';b.textContent=it.name;});
+  charOpts('#optHand',[{id:1,name:'Backhand'},{id:-1,name:'Forehand'}],a.hand,it=>{a.hand=it.id;},
+           (b,it)=>{b.className='opt';b.textContent=it.name;});
+  charSwatches('#optSkin',SKINS,a.skin,it=>{a.skin=it.id;});
+  charOpts('#optHairStyle',HAIR_STYLES,a.hairStyle,it=>{a.hairStyle=it.id;},(b,it)=>{b.className='opt';b.textContent=it.name;});
+  charSwatches('#optHairC',HAIRC,a.hair,it=>{a.hair=it.id;});
+
+  // A kit preset clears any per-garment overrides, so picking one is a clean reset rather than a
+  // half-applied mix of the last two things you tapped.
+  charOpts('#optKit',LOCKER.filter(l=>KITS[l.id]),a.kit,
+           it=>{a.kit=it.id;delete a.shirt;delete a.short;delete a.sock;delete a.shoe;},
+           (b,it)=>{b.className='opt';b.textContent=it.name;});
+  const K=kitOf(a);
+  const garment=['#f2f0e8','#23262a','#4a6b46','#9c4b2e','#3d5a6b','#d8c02e','#7a3ea8','#c4362f'];
+  charSwatches('#optShirt',garment,garment.indexOf(K.shirt),it=>{a.shirt=garment[it.id];});
+  charSwatches('#optShort',garment,garment.indexOf(K.short),it=>{a.short=garment[it.id];a.sock=garment[it.id];});
+  charSwatches('#optShoe',garment,garment.indexOf(K.shoe),it=>{a.shoe=garment[it.id];});
+
+  $('#optHeight').value=Math.round((a.height||0.5)*100);
+  $('#lblHeight').textContent=(Math.round(avHeight(a)*100)/100).toFixed(2)+' m';
+
   const el=$('#locker');if(!el)return;el.innerHTML='';
   LOCKER.forEach(it=>{
     const b=document.createElement('button');
     b.className='kit'+(it.owned?' on':'');
     b.innerHTML='<span class="kitname">'+it.name+'</span><span class="kitsub">'+it.sub+'</span>'+
-      '<span class="kittag">'+(it.owned?'Equipped':it.price)+'</span>';
+      '<span class="kittag">'+(it.owned?'Owned':it.price)+'</span>';
     b.addEventListener('click',()=>{
-      if(!it.owned){toast('Coming soon',it.name+' unlocks in a future update');return;}
-      App.avatar.kit=it.id;rebuildCharAvatar();renderCharControls();});
+      if(!it.owned){toast('Coming soon',it.name+' unlocks when the Pro Shop opens');return;}
+      if(KITS[it.id]){App.avatar.kit=it.id;rebuildCharAvatar();renderCharControls();}});
     el.appendChild(b);});
 }
+$$('#charTabs .tab').forEach(t=>t.addEventListener('click',()=>{
+  $$('#charTabs .tab').forEach(x=>x.classList.toggle('on',x===t));
+  $$('#character .pane').forEach(p=>p.classList.toggle('on',p.dataset.pane===t.dataset.tab));
+}));
+$('#optHeight').addEventListener('input',e=>{
+  App.avatar.height=+e.target.value/100;
+  $('#lblHeight').textContent=(Math.round(avHeight(App.avatar)*100)/100).toFixed(2)+' m';
+  rebuildCharAvatar();});
+// Drag to turn the figure. The whole point of building geometry was that it is correct from any angle,
+// so the creator lets you check that rather than asking you to take it on trust.
+{
+  const pv=$('#pv');let drag=null;
+  pv.addEventListener('pointerdown',e=>{drag={x:e.clientX,y0:charYaw};pv.setPointerCapture(e.pointerId);$('#pvHint').classList.add('gone');});
+  pv.addEventListener('pointermove',e=>{if(drag)charYaw=drag.y0+(e.clientX-drag.x)*0.012;});
+  const up=()=>{drag=null;};pv.addEventListener('pointerup',up);pv.addEventListener('pointercancel',up);
+}
+$('#pvPose').addEventListener('click',()=>{charPose=!charPose;$('#pvPose').classList.toggle('on',charPose);});
 $('#charName').addEventListener('input',e=>{App.avatar.name=e.target.value||'You';});
 $('#btnSaveChar').addEventListener('click',()=>{store('pdg.avatar',App.avatar);show('title');});
 
@@ -2052,7 +2219,7 @@ const _mDiff=$('#mDiff');if(_mDiff)_mDiff.addEventListener('click',()=>{setDiff(
 renderDiffChips();
 
 const Game={on:false,park:null,holes:[],idx:0,scores:[],strokes:0,world:null,av:null,disc:null,discIdx:0,aim:0,phase:'aim',flight:null,player:{x:0,y:0,z:0},wind:{x:0,z:0,mph:0},camMode:0,trail:null,trailPts:[],animT:0,pending:null,celebrate:0,courseKey:null,courseName:'',
-  hand:1,bend:0,preview:null,previewDirty:true,previewPower:0.85,tour:null,time:0};
+  hand:(App.avatar&&App.avatar.hand)||1,bend:0,preview:null,previewDirty:true,previewPower:0.85,tour:null,time:0};
 const discMesh=(()=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(0.105,0.11,0.018,24),new THREE.MeshStandardMaterial({color:C('#ff5a36'),roughness:0.35,metalness:0.05}));m.castShadow=true;return m;})();
 function startRound(park,holes,key,name){
   Game.challenge=null;Game.chDone=false;const _cc=$('#chChip');if(_cc)_cc.hidden=true;
@@ -2419,7 +2586,9 @@ function frame(now){
   else if(App.screen==='character'&&charAv){charT+=dt;const H=charAv.userData.H||2.0;
     const pv=$('#pv');const w=pv.clientWidth,h=pv.clientHeight;if(pv.width!==Math.round(w*charRenderer.getPixelRatio())){charRenderer.setSize(w,h,false);}
     charCam.aspect=w/h;charCam.updateProjectionMatrix();
-    charCam.position.set(Math.sin(charT*0.3)*0.35,1.0*H,1.85*H);charCam.lookAt(0,0.55*H,0);
+    if(charPose){const t=(charT*0.55)%1.6;poseThrow(charAv,Math.min(t,1),1);}else poseIdle(charAv);
+    charAv.rotation.y=charYaw;
+    charCam.position.set(0,1.02*H,1.85*H);charCam.lookAt(0,0.55*H,0);
     charRenderer.render(charScene,charCam);return;}
   else if(App.screen==='game'&&Game.on){gameTick(dt);cineUpdate(dt);}
   else if(App.screen!=='title'){renderer.clear();return;}
