@@ -155,6 +155,29 @@ input[type=text]{font:inherit;padding:10px 12px;border-radius:6px;border:1px sol
 #character{padding-top:0;background:var(--ink)}
 #character .topbar{padding-top:max(16px,env(safe-area-inset-top));padding-bottom:8px}
 #dcanvasWrap{flex:1;min-height:0;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#111;position:relative}
+.dhint{position:absolute;left:10px;bottom:8px;font-family:var(--display);text-transform:uppercase;letter-spacing:.1em;font-size:10px;color:var(--paper2);opacity:.7;pointer-events:none}
+/* the course at a glance: every hole, its par, which one you are on, and a way to add another */
+.holestrip{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;flex:0 0 auto}
+.hchip{flex:0 0 auto;min-width:52px;background:var(--panel);border:1px solid var(--line);color:var(--paper);border-radius:9px;padding:6px 8px;cursor:pointer;text-align:center;font:inherit}
+.hchip.on{border-color:var(--accent2)}
+.hchip b{display:block;font-family:var(--display);font-size:16px;font-weight:800;line-height:1}
+.hchip small{display:block;font-size:10px;color:var(--muted);letter-spacing:.06em}
+.hchip.on b,.hchip.on small{color:var(--accent2)}
+.hchip.add{color:var(--accent2);border-style:dashed}
+/* tools as labelled targets rather than a row of words */
+.tools{display:flex;gap:6px;flex:0 0 auto}
+.tool{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:var(--panel);border:1px solid var(--line);color:var(--paper2);border-radius:10px;padding:7px 2px;cursor:pointer;font:inherit}
+.tool.on{border-color:var(--accent2);color:var(--accent2)}
+.tool span{font-family:var(--display);text-transform:uppercase;letter-spacing:.08em;font-size:10px}
+.ti{width:18px;height:18px;border-radius:50%;display:block}
+.ti.tree{background:#3d7a48;border-radius:50% 50% 45% 45%}
+.ti.rock{background:#8f8a80;border-radius:42%}
+.ti.water{background:#3f9fb5}
+.ti.erase{background:transparent;border:2px dashed currentColor}
+.dopts{gap:6px;flex-wrap:wrap;flex:0 0 auto}
+.dopts .chip{padding:6px 10px;font-size:12px}
+.brush{display:flex;align-items:center;gap:6px}
+.brush input{width:72px;accent-color:var(--accent2);margin:0}
 #dcanvas{width:100%;height:100%;display:block;touch-action:none}
 .tools{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
 .tools .chip{flex:0 0 auto}
@@ -307,14 +330,28 @@ select{font:inherit;font-family:var(--display);font-weight:600;letter-spacing:.0
 <section id="designer" class="screen">
   <div class="topbar"><div><div class="eyebrow">Course designer</div><h2 style="font-size:22px">My Course</h2></div>
     <div class="row"><button class="btn small" id="btnPlayCustom">Play</button><button class="btn secondary small" data-nav="title">Back</button></div></div>
-  <div class="row"><input type="text" id="courseName" placeholder="Course name" style="flex:1;min-width:120px" maxlength="24" value="Cahaba River Ridge">
-    <select id="dPark"></select>
-    <select id="dPar"><option value="3">Par 3</option><option value="4">Par 4</option><option value="5">Par 5</option></select></div>
-  <div class="tools" id="tools">
-    <button class="chip on" data-tool="tree">Tree</button><button class="chip" data-tool="rock">Boulder</button><button class="chip" data-tool="water">Water</button><button class="chip" data-tool="basket">Basket</button><button class="chip" data-tool="erase">Erase</button><button class="chip" data-tool="forest">Wild forest: on</button>
+  <div class="row"><input type="text" id="courseName" placeholder="Course name" style="flex:1;min-width:110px" maxlength="24" value="Cahaba River Ridge">
+    <select id="dPark"></select></div>
+  <div class="holestrip" id="holeStrip"></div>
+  <div id="dcanvasWrap"><canvas id="dcanvas"></canvas>
+    <div class="dhint" id="dHint">Tap to place · drag the basket to move it</div>
   </div>
-  <div id="dcanvasWrap"><canvas id="dcanvas"></canvas></div>
-  <div class="row" style="justify-content:space-between"><div class="row"><button class="btn secondary small" id="dPrev">‹</button><span class="dstat" id="dHoleLbl">Hole 1 of 1</span><button class="btn secondary small" id="dNext">›</button><button class="btn secondary small" id="dAdd">+ Hole</button><button class="btn secondary small" id="dDel">Delete</button></div><button class="btn secondary small" id="dSave">Save course</button></div>
+  <div class="tools" id="tools">
+    <button class="tool on" data-tool="tree"><i class="ti tree"></i><span>Tree</span></button>
+    <button class="tool" data-tool="rock"><i class="ti rock"></i><span>Boulder</span></button>
+    <button class="tool" data-tool="water"><i class="ti water"></i><span>Water</span></button>
+    <button class="tool" data-tool="erase"><i class="ti erase"></i><span>Erase</span></button>
+  </div>
+  <div class="row dopts">
+    <button class="chip" id="dUndo">Undo</button>
+    <button class="chip" id="dForest">Wild forest · on</button>
+    <label class="chip brush">Brush <input type="range" id="dBrush" min="1" max="5" value="1" step="1" aria-label="Brush size"></label>
+    <button class="chip" id="dClear">Clear hole</button>
+  </div>
+  <div class="row" style="justify-content:space-between;gap:8px">
+    <button class="btn secondary small" id="dDel">Delete hole</button>
+    <button class="btn secondary small" id="dSave">Save course</button>
+  </div>
 </section>
 
 <section id="game" class="screen">
@@ -3063,7 +3100,10 @@ $('#chrRetry').addEventListener('click',()=>{const c=Game.challenge;$('#chrOverl
 $('#chrBack').addEventListener('click',()=>{chExit();renderChallenges();show('challenges');});
 
 // ---------- course designer (top-down editor) ----------
-const Designer={tool:'tree',holes:[],idx:0,parkId:'smokies',forest:true,cv:null,ctx:null,
+// The editor is a plan view of one hole: tee at the bottom, basket somewhere up the page, objects placed
+// by tapping. What it draws is deliberately close to what the minimap draws in play, so the thing you make
+// and the thing you walk onto look like the same place.
+const Designer={tool:'tree',holes:[],idx:0,parkId:'smokies',brush:1,cv:null,ctx:null,drag:null,
   blank(){return {par:3,basket:{x:0,z:90},objs:[],autoTrees:true};},
   open(){
     const d=this;if(!d.cv){d.cv=$('#dcanvas');d.ctx=d.cv.getContext('2d');d.bind();}
@@ -3077,55 +3117,122 @@ const Designer={tool:'tree',holes:[],idx:0,parkId:'smokies',forest:true,cv:null,
   get sc(){return Math.min(this.cv.width/200,this.cv.height/300);},
   toWorld(px,py){const r=this.cv.getBoundingClientRect();const cx=(px-r.left)*devicePixelRatio,cy=(py-r.top)*devicePixelRatio;return {x:(this.cv.width/2-cx)/this.sc,z:(this.cv.height-cy)/this.sc-20};},
   hole(){return this.holes[this.idx];},
-  sync(){const h=this.hole();$('#dHoleLbl').textContent=`Hole ${this.idx+1} of ${this.holes.length}`;$('#dPar').value=h.par;$$('#tools .chip').forEach(c=>{c.classList.toggle('on',c.dataset.tool===this.tool||(c.dataset.tool==='forest'&&h.autoTrees));if(c.dataset.tool==='forest')c.textContent='Wild forest: '+(h.autoTrees?'on':'off');});},
+  len(h){return Math.hypot(h.basket.x,h.basket.z);},
+  // Par used to be a dropdown you could leave at 3 on a 900 ft hole. It follows the length instead, using
+  // the same bands the generated courses use, so a hole you draw scores like a hole you play.
+  parFor(len){const ft=len*FT;return ft<480?3:ft<760?4:5;},
+  // Undo is one deep per edit and keeps the whole hole, which is simpler than tracking object identity and
+  // covers the thing people actually want back: the last tap.
+  snap(){this._undo=JSON.stringify(this.hole());},
+  undo(){if(!this._undo)return;this.holes[this.idx]=JSON.parse(this._undo);this._undo=null;this.sync();this.draw();},
+  sync(){
+    const d=this,h=d.hole();
+    h.par=d.parFor(d.len(h));
+    const strip=$('#holeStrip');strip.innerHTML='';
+    d.holes.forEach((hh,i)=>{
+      const b=document.createElement('button');b.className='hchip'+(i===d.idx?' on':'');
+      b.innerHTML='<b>'+(i+1)+'</b><small>PAR '+d.parFor(d.len(hh))+'</small>';
+      b.addEventListener('click',()=>{d.idx=i;d._undo=null;d.sync();d.draw();});
+      strip.appendChild(b);});
+    if(d.holes.length<18){
+      const a=document.createElement('button');a.className='hchip add';a.innerHTML='<b>+</b><small>HOLE</small>';
+      a.addEventListener('click',()=>{d.holes.push(d.blank());d.idx=d.holes.length-1;d._undo=null;d.sync();d.draw();});
+      strip.appendChild(a);}
+    $$('#tools .tool').forEach(c=>c.classList.toggle('on',c.dataset.tool===d.tool));
+    $('#dForest').textContent='Wild forest · '+(h.autoTrees?'on':'off');
+    $('#dForest').classList.toggle('on',!!h.autoTrees);
+    $('#dUndo').disabled=!d._undo;
+    $('#dDel').disabled=d.holes.length<=1;
+  },
   bind(){
     const d=this;
-    $$('#tools .chip').forEach(c=>c.addEventListener('click',()=>{if(c.dataset.tool==='forest'){d.hole().autoTrees=!d.hole().autoTrees;}else d.tool=c.dataset.tool;d.sync();d.draw();}));
+    $$('#tools .tool').forEach(c=>c.addEventListener('click',()=>{d.tool=c.dataset.tool;d.sync();}));
     $('#dPark').addEventListener('change',e=>{d.parkId=e.target.value;d.draw();});
-    $('#dPar').addEventListener('change',e=>{d.hole().par=+e.target.value;});
-    $('#dPrev').addEventListener('click',()=>{d.idx=(d.idx-1+d.holes.length)%d.holes.length;d.sync();d.draw();});
-    $('#dNext').addEventListener('click',()=>{d.idx=(d.idx+1)%d.holes.length;d.sync();d.draw();});
-    $('#dAdd').addEventListener('click',()=>{if(d.holes.length>=18)return;d.holes.push(d.blank());d.idx=d.holes.length-1;d.sync();d.draw();});
-    $('#dDel').addEventListener('click',()=>{if(d.holes.length<=1)return;d.holes.splice(d.idx,1);d.idx=Math.min(d.idx,d.holes.length-1);d.sync();d.draw();});
+    $('#dBrush').addEventListener('input',e=>{d.brush=+e.target.value;});
+    $('#dForest').addEventListener('click',()=>{d.snap();d.hole().autoTrees=!d.hole().autoTrees;d.sync();d.draw();});
+    $('#dUndo').addEventListener('click',()=>d.undo());
+    $('#dClear').addEventListener('click',()=>{d.snap();d.hole().objs=[];d.sync();d.draw();});
+    $('#dDel').addEventListener('click',()=>{if(d.holes.length<=1)return;d.holes.splice(d.idx,1);d.idx=Math.min(d.idx,d.holes.length-1);d._undo=null;d.sync();d.draw();});
     $('#dSave').addEventListener('click',()=>{d.save();});
     $('#btnPlayCustom').addEventListener('click',()=>{const c=d.save();const park=PARKS.find(p=>p.id===c.parkId);startRound(park,c.holes.map((h,i)=>({...h,n:i+1})),'custom:'+c.name,c.name);});
-    let painting=false;
-    d.cv.addEventListener('pointerdown',e=>{painting=true;d.place(e);});
-    d.cv.addEventListener('pointermove',e=>{if(painting&&(d.tool==='tree'||d.tool==='erase'))d.place(e,true);});
-    addEventListener('pointerup',()=>{painting=false;});
+    d.cv.addEventListener('pointerdown',e=>{
+      const p=d.toWorld(e.clientX,e.clientY),h=d.hole();
+      // the basket is dragged directly rather than hidden behind a tool nobody found
+      if(Math.hypot(p.x-h.basket.x,p.z-h.basket.z)<10){d.snap();d.drag='basket';d.cv.setPointerCapture(e.pointerId);d.move(e);return;}
+      d.snap();d.drag='paint';d.place(e);});
+    d.cv.addEventListener('pointermove',e=>{if(d.drag==='basket')d.move(e);else if(d.drag==='paint'&&(d.tool==='tree'||d.tool==='erase'))d.place(e,true);});
+    const up=()=>{d.drag=null;d.sync();};
+    d.cv.addEventListener('pointerup',up);d.cv.addEventListener('pointercancel',up);
     addEventListener('resize',()=>{if(App.screen==='designer'){d.fit();d.draw();}});
   },
+  move(e){const d=this,p=d.toWorld(e.clientX,e.clientY),h=d.hole();
+    h.basket={x:clamp(p.x,-80,80),z:clamp(p.z,30,260)};h.par=d.parFor(d.len(h));d.draw();},
   place(e,drag){
     const d=this,h=d.hole(),p=d.toWorld(e.clientX,e.clientY);const park=PARKS.find(x=>x.id===d.parkId);
-    if(d.tool==='basket'){h.basket={x:clamp(p.x,-80,80),z:clamp(p.z,30,260)};}
-    else if(d.tool==='tree'){if(drag&&h.objs.some(o=>o.t==='tree'&&Math.hypot(o.x-p.x,o.z-p.z)<5))return;const tp=park.tree;h.objs.push({t:'tree',x:p.x,z:p.z,h:lerp(tp.h[0],tp.h[1],Math.random()),r:lerp(tp.r[0],tp.r[1],Math.random())});}
-    else if(d.tool==='rock'){h.objs.push({t:'rock',x:p.x,z:p.z,s:1.5+Math.random()*1.5});}
-    else if(d.tool==='water'){h.objs.push({t:'water',x:p.x,z:p.z,rx:9+Math.random()*4,rz:7+Math.random()*5});}
-    else if(d.tool==='erase'){const i=h.objs.findIndex(o=>Math.hypot(o.x-p.x,o.z-p.z)<(o.t==='water'?o.rx:6));if(i>=0)h.objs.splice(i,1);}
+    const n=d.tool==='tree'?d.brush:1;
+    for(let i=0;i<n;i++){
+      // a brush bigger than one scatters within a radius rather than stacking on the same spot
+      const j=n>1?{x:p.x+(Math.random()-0.5)*4.5*n,z:p.z+(Math.random()-0.5)*4.5*n}:p;
+      if(d.tool==='tree'){
+        if(drag&&h.objs.some(o=>o.t==='tree'&&Math.hypot(o.x-j.x,o.z-j.z)<5))continue;
+        const tp=park.tree;h.objs.push({t:'tree',x:j.x,z:j.z,h:lerp(tp.h[0],tp.h[1],Math.random()),r:lerp(tp.r[0],tp.r[1],Math.random())});
+      }else if(d.tool==='rock'){h.objs.push({t:'rock',x:j.x,z:j.z,s:1.5+Math.random()*1.5});}
+      else if(d.tool==='water'){h.objs.push({t:'water',x:j.x,z:j.z,rx:9+Math.random()*4,rz:7+Math.random()*5});}
+      else if(d.tool==='erase'){const k=h.objs.findIndex(o=>Math.hypot(o.x-j.x,o.z-j.z)<(o.t==='water'?o.rx:6));if(k>=0)h.objs.splice(k,1);}
+    }
     d.draw();
   },
-  toHole(h,i){const b=h.basket;const len=Math.hypot(b.x,b.z);return {n:i+1,par:h.par,len,path:[[0,0],[b.x*0.5,b.z*0.5],[b.x,b.z]],objs:h.objs.map(o=>({...o})),seed:1000+i*77,parkId:this.parkId,autoTrees:h.autoTrees};},
+  toHole(h,i){const b=h.basket;const len=Math.hypot(b.x,b.z);return {n:i+1,par:this.parFor(len),len,path:[[0,0],[b.x*0.5,b.z*0.5],[b.x,b.z]],objs:h.objs.map(o=>({...o})),seed:1000+i*77,parkId:this.parkId,autoTrees:h.autoTrees};},
   save(){const name=($('#courseName').value||'My Course').trim();const course={name,parkId:this.parkId,holes:this.holes.map((h,i)=>this.toHole(h,i))};
     store('pdg.draft',{name,parkId:this.parkId,holes:this.holes});
     const i=App.courses.findIndex(c=>c.name===name);if(i>=0)App.courses[i]=course;else App.courses.push(course);store('pdg.courses',App.courses);
     $('#dSave').textContent='Saved';setTimeout(()=>{$('#dSave').textContent='Save course';},1200);return course;},
   draw(){
     const d=this,c=d.ctx,h=d.hole(),park=PARKS.find(x=>x.id===d.parkId);const W=d.cv.width,H=d.cv.height,sc=d.sc;
+    const R=devicePixelRatio;
     c.fillStyle=park.ground.rough;c.fillRect(0,0,W,H);
-    // fairway
-    c.strokeStyle=park.ground.fair;c.lineWidth=16*sc;c.lineCap='round';c.beginPath();c.moveTo(d.X(0),d.Z(0));c.lineTo(d.X(h.basket.x),d.Z(h.basket.z));c.stroke();
-    // grid (50 ft)
-    c.strokeStyle='rgba(255,255,255,.08)';c.lineWidth=1;for(let z=0;z<=280;z+=15.24){c.beginPath();c.moveTo(0,d.Z(z));c.lineTo(W,d.Z(z));c.stroke();}
+    // rough texture: without it the plan view is two flat colours and reads as a diagram, not ground
+    c.save();c.globalAlpha=0.10;const rr=mulberry(99);
+    for(let i=0;i<220;i++){const x=rr()*W,y=rr()*H;c.fillStyle=i%2?park.ground.bare:park.ground.fair;
+      c.beginPath();c.ellipse(x,y,(2+rr()*5)*R,(1.5+rr()*3)*R,rr()*3,0,Math.PI*2);c.fill();}
+    c.restore();
+    // fairway, soft edged
+    const tx=d.X(0),tz=d.Z(0),bx=d.X(h.basket.x),bz=d.Z(h.basket.z);
+    c.save();c.lineCap='round';
+    c.strokeStyle=park.ground.fair;c.globalAlpha=0.5;c.lineWidth=22*sc;
+    c.beginPath();c.moveTo(tx,tz);c.lineTo(bx,bz);c.stroke();
+    c.globalAlpha=1;c.lineWidth=15*sc;c.beginPath();c.moveTo(tx,tz);c.lineTo(bx,bz);c.stroke();
+    c.restore();
+    // distance rings from the tee, every 100 ft, so length is something you see rather than read
+    c.save();c.strokeStyle='rgba(243,236,220,.16)';c.lineWidth=1*R;
+    c.setLineDash([4*R,5*R]);c.font=`${Math.round(9*R)}px Barlow Condensed, sans-serif`;
+    c.fillStyle='rgba(243,236,220,.34)';c.textAlign='center';
+    for(let ft=100;ft<=900;ft+=100){const r=(ft/FT)*sc;if(r>H*1.1)break;
+      c.beginPath();c.arc(tx,tz,r,Math.PI,Math.PI*2);c.stroke();
+      c.fillText(ft+' FT',tx,tz-r-3*R);}
+    c.restore();
     for(const o of h.objs){
-      if(o.t==='water'){c.fillStyle=park.water?park.water.color:'#3f9fb5';c.beginPath();c.ellipse(d.X(o.x),d.Z(o.z),o.rx*sc,o.rz*sc,0,0,Math.PI*2);c.fill();}
-      else if(o.t==='tree'){c.fillStyle=park.tree.leaf2;c.beginPath();c.arc(d.X(o.x),d.Z(o.z),Math.max(3,o.r*sc),0,Math.PI*2);c.fill();}
-      else if(o.t==='rock'){c.fillStyle='#8f8a80';c.beginPath();c.arc(d.X(o.x),d.Z(o.z),Math.max(3,o.s*sc),0,Math.PI*2);c.fill();}
+      const ox=d.X(o.x),oz=d.Z(o.z);
+      c.save();c.shadowColor='rgba(0,0,0,.45)';c.shadowBlur=4*R;c.shadowOffsetY=2*R;
+      if(o.t==='water'){c.fillStyle=park.water?park.water.color:'#3f9fb5';c.beginPath();c.ellipse(ox,oz,o.rx*sc,o.rz*sc,0,0,Math.PI*2);c.fill();}
+      else if(o.t==='tree'){c.fillStyle=park.tree.leaf2;c.beginPath();c.arc(ox,oz,Math.max(3,o.r*sc),0,Math.PI*2);c.fill();
+        c.shadowColor='transparent';c.fillStyle=park.tree.leaf;c.beginPath();c.arc(ox-o.r*sc*0.22,oz-o.r*sc*0.22,Math.max(1.6,o.r*sc*0.5),0,Math.PI*2);c.fill();}
+      else if(o.t==='rock'){c.fillStyle='#8f8a80';c.beginPath();c.arc(ox,oz,Math.max(3,o.s*sc),0,Math.PI*2);c.fill();}
+      c.restore();
     }
-    c.fillStyle='#ddd';c.fillRect(d.X(0)-3*sc,d.Z(0)-2*sc,6*sc,4*sc);
-    c.fillStyle='#f2c230';c.beginPath();c.arc(d.X(h.basket.x),d.Z(h.basket.z),Math.max(5,2.5*sc),0,Math.PI*2);c.fill();
-    c.fillStyle='rgba(243,236,220,.9)';c.font=`${Math.round(13*devicePixelRatio)}px Barlow Condensed, sans-serif`;c.textAlign='left';
-    c.fillText(`${Math.round(Math.hypot(h.basket.x,h.basket.z)*FT)} FT · PAR ${h.par} · ${h.objs.length} objects`,10*devicePixelRatio,20*devicePixelRatio);
-    c.textAlign='right';c.fillText('TEE at bottom · tap to place',W-10*devicePixelRatio,20*devicePixelRatio);
+    // tee pad, drawn as a pad rather than a dash
+    c.save();c.fillStyle='#6f6a62';c.strokeStyle='rgba(0,0,0,.35)';c.lineWidth=1*R;
+    const pw=5*sc,ph=3*sc;c.beginPath();c.rect(tx-pw/2,tz-ph/2,pw,ph);c.fill();c.stroke();c.restore();
+    // basket: ring plus pole, and it glows while you are dragging it
+    c.save();
+    if(d.drag==='basket'){c.shadowColor='rgba(242,194,48,.9)';c.shadowBlur=12*R;}
+    c.strokeStyle='#f2c230';c.lineWidth=2*R;c.beginPath();c.arc(bx,bz,Math.max(7,3.4*sc),0,Math.PI*2);c.stroke();
+    c.fillStyle='#f2c230';c.beginPath();c.arc(bx,bz,Math.max(2.5,1.3*sc),0,Math.PI*2);c.fill();
+    c.restore();
+    // readout
+    const ft=Math.round(d.len(h)*FT);
+    c.fillStyle='rgba(243,236,220,.92)';c.font=`${Math.round(13*R)}px Barlow Condensed, sans-serif`;c.textAlign='left';
+    c.fillText(`HOLE ${d.idx+1} · ${ft} FT · PAR ${h.par} · ${h.objs.length} OBJECTS`,10*R,20*R);
   }
 };
 
