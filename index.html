@@ -510,7 +510,7 @@ const PARKS=[
  // Four great golf courses reimagined as disc golf. The terrain, planting, wind and hazards are modelled on
  // the real places; the names are ours. See "Course names" in the README for why.
  {id:'monterey',name:'Monterey Cliffs',state:'California',est:1919,tag:'Pacific Cliffs Links',
-  blurb:'Fescue benches on a sea cliff, wind-bent cypress and the Pacific down the whole right side. Out of bounds is sixty feet straight down.',
+  blurb:'Fescue benches on a sea cliff, wind-bent cypress and the Pacific down the whole left side. Out of bounds is sixty feet straight down.',
   sky:['#79a8cf','#dde9f0'],fog:'#cfdde4',fogDensity:0.0006,sun:[55,65,-30],
   ground:{fair:'#8aa65c',rough:'#9c9a62',bare:'#dbcfae'},cliff:null,ridge:['#7b90a0','#a2b3bf','#c6d3db'],
   tree:{type:'cottonwood',trunk:'#6d5f4c',leaf:'#2d4a34',leaf2:'#44663f',h:[8,14],r:[3.6,6],density:0.2},
@@ -564,12 +564,12 @@ const SHAPES=[
  {id:'blind',short:'Blind',sCurve:0.6,  name:'Blind Ridge', note:'Basket is over the rise. Trust the beam.',par:4,len:[195,245],dog:[0,32],corridor:[14,20], dens:0.8,  drop:[-14,10], hump:[11,16]},
  {id:'guarded',short:'Guarded',sCurve:0.35,name:'Guarded Pin', note:'Pin is in a nest of trees.',           par:3,len:[135,175], dog:[0,22], corridor:[13,19],   dens:0.85, drop:[-9,5], guard:true},
  // park signatures: these only appear on the park they belong to, so no two courses share a hole list
- {id:'rimrun', short:'Rim Run', name:'Rim Run',  note:'The canyon is out of bounds. Stay left.', par:4,len:[190,240], dog:[0,18], corridor:[12,17], dens:0.7, drop:[-9,7], only:'grandcanyon', hugRight:true},
+ {id:'rimrun', short:'Rim Run', name:'Rim Run',  note:'The canyon is out of bounds. Stay right.', par:4,len:[190,240], dog:[0,18], corridor:[12,17], dens:0.7, drop:[-9,7], only:'grandcanyon', hugRight:true},
  {id:'thermal',short:'Basin',   name:'Thermal Basin',note:'Steam and hot water all through the landing zone.',par:4,len:[195,245],dog:[0,26],corridor:[16,22],dens:0.5,drop:[-8,6], only:'yellowstone', pools:true},
  {id:'narrows',short:'Narrows', name:'The Narrows',note:'Sandstone either side. There is one way through.',par:3,len:[105,145],dog:[0,12],corridor:[6.5,8.5],dens:0.8,drop:[-6,9], only:'zion', walls:true},
  {id:'hollow', short:'Hollow',  name:'The Hollow',note:'Steep sides. Everything funnels to the creek.',par:4,len:[180,230],dog:[0,20],corridor:[13,18],dens:1.15,drop:[-9,-2], only:'smokies', bowl:true},
  {id:'ribbon', short:'Ribbon',  name:'Granite Ribbon',note:'Long, turning, and framed by the walls.',par:5,len:[255,315],dog:[40,80],corridor:[15,21],dens:0.8,drop:[-12,2], only:'yosemite', sCurve:1},
- {id:'seacliff',short:'Sea Cliff',name:'Sea Cliff',note:'The Pacific is out of bounds. Everything stays left.',par:4,len:[185,235],dog:[0,16],corridor:[13,19],dens:0.3,drop:[-9,5], only:'monterey', hugRight:true},
+ {id:'seacliff',short:'Sea Cliff',name:'Sea Cliff',note:'The Pacific is out of bounds. Everything stays right.',par:4,len:[185,235],dog:[0,16],corridor:[13,19],dens:0.3,drop:[-9,5], only:'monterey', hugRight:true},
  {id:'lakecarry',short:'Carry',name:'Lake Carry',note:'The lake across the front. Carry it or lay up short.',par:3,len:[118,158],dog:[0,10],corridor:[12,18],dens:0.45,drop:[-8,4], only:'tahoe', cross:true},
  {id:'dunes',short:'Dunes',name:'The Dunes',note:'No trees to stop it and nothing to block the wind.',par:5,len:[250,320],dog:[15,50],corridor:[26,36],dens:0.12,drop:[-12,6], only:'whistling', hump:[9,15], sCurve:0.6},
  {id:'corner',short:'Corner',name:'Creek Corner',note:'Creek across the front, pines down both sides.',par:3,len:[128,168],dog:[0,14],corridor:[10,14],dens:1.0,drop:[-17,-7], only:'magnolia', cross:true, guard:true},
@@ -710,10 +710,11 @@ function buildHole(park,S,r,i){
     }
     if(park.seaEdge){
       // The sea is this park's hazard instead of a creek, and where it starts has to follow the hole:
-      // a dogleg swinging right, or Sea Cliff walking the whole line out towards the edge, would
+      // a dogleg swinging to +x, or Sea Cliff walking the whole line out towards the edge, would
       // otherwise put its own fairway underwater. Measure the finished path, then set the cliff a
-      // corridor and a margin beyond the furthest right it ever gets. Close in on a straight hole,
-      // pushed out on a hole that already leans at it.
+      // corridor and a margin beyond the furthest +x it ever gets. (+x is the player's LEFT: the
+      // camera is right-handed and looks down +z; `hugRight` and `obRight` are data-space names.)
+      // Close in on a straight hole, pushed out on a hole that already leans at it.
       let maxX=0;for(let k=0;k<=24;k++)maxX=Math.max(maxX,pathPoint(path,k/24)[0]);
       const seaX=Math.max(34,maxX+corridor*0.5+13);
       shape.seaX=seaX;
