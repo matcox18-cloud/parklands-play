@@ -59,6 +59,9 @@ h3{font-size:19px;font-weight:600}
 .park.fam{grid-template-columns:48px 1fr auto}
 .park.fam .sw{width:48px;height:48px}
 .park.static{cursor:default}
+.hist{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.hist .meta{font-size:12px;color:var(--muted)}
+.hist .best{font-family:var(--display);font-size:20px;font-weight:800;color:var(--accent2)}
 .linkish{background:none;border:0;padding:8px 6px;margin:-8px -6px;min-height:36px;color:var(--accent2);font:inherit;text-decoration:underline;cursor:pointer}
 #scStand tr.me td,#boardTable tr.me td{color:var(--accent2);font-weight:700}
 .chcard.locked{opacity:.62}
@@ -113,7 +116,7 @@ h3{font-size:19px;font-weight:600}
 .minimap{position:absolute;right:12px;top:calc(max(10px,env(safe-area-inset-top)) + 78px);width:84px;height:150px;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:rgba(9,20,14,.6);pointer-events:auto}
 .minimap canvas{width:100%;height:100%;display:block}
 .iconbtn{pointer-events:auto;background:var(--panel);border:1px solid var(--line);color:var(--paper);border-radius:8px;width:44px;height:44px;font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
-#shopOverlay,#boardOverlay{position:fixed;z-index:30}
+#shopOverlay,#boardOverlay,#mfaOverlay{position:fixed;z-index:30}
 .toast{position:fixed;left:50%;top:38%;z-index:40;transform:translate(-50%,-50%);font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:clamp(40px,12vw,72px);letter-spacing:.04em;color:var(--paper);text-shadow:0 4px 24px rgba(0,0,0,.6);opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;text-align:center;line-height:.95}
 .toast.on{opacity:1;transform:translate(-50%,-50%) scale(1.05)}
 .toast small{display:block;font-size:18px;letter-spacing:.2em;color:var(--accent2);margin-top:8px}
@@ -291,20 +294,44 @@ select{font:inherit;font-family:var(--display);font-weight:600;letter-spacing:.0
 </section>
 
 <section id="family" class="screen">
-  <div class="topbar"><div><div class="eyebrow">Play together</div><h2>Family</h2></div><button class="btn secondary small" data-nav="title">Back</button></div>
-  <div id="famConnect" class="stack fam">
-    <p class="fine" style="margin:0">Pick a name your family will recognise. No email, no password — the name is yours on this device from now on.</p>
-    <input id="famName" maxlength="16" placeholder="Your name" autocomplete="off" autocapitalize="words">
-    <button class="btn" id="famGo">Connect</button>
+  <div class="topbar"><div><div class="eyebrow">Your account</div><h2>Player</h2></div><button class="btn secondary small" data-nav="title">Back</button></div>
+  <div id="famConnect" class="stack fam" data-mode="in">
+    <p class="fine" id="famHint" style="margin:0"></p>
+    <input id="famName" maxlength="16" placeholder="Your name (what the family sees)" autocomplete="username" autocapitalize="words" hidden>
+    <input id="famEmailIn" type="email" placeholder="Email" autocomplete="email" autocapitalize="none">
+    <input id="famPass" type="password" placeholder="Password" autocomplete="current-password">
+    <button class="btn" id="famGo">Sign in</button>
+    <button class="btn" id="famRegister" hidden>Create account</button>
+    <div class="row" style="justify-content:space-between"><button class="linkish" id="famSwitch">New here? Create an account</button><button class="linkish" id="famForgot">Forgot password</button></div>
+  </div>
+  <div id="famMfa" class="stack fam" hidden>
+    <p class="fine" style="margin:0">Two-step codes are on for this account. Enter the six digits from your authenticator app.</p>
+    <input id="famCode2" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="one-time-code" style="letter-spacing:.3em;text-align:center">
+    <button class="btn" id="famVerify">Verify</button>
+    <button class="linkish" id="famMfaCancel">Use a different account</button>
+  </div>
+  <div id="famName2" class="stack fam" hidden>
+    <p class="fine" style="margin:0">One more thing: the name your family will see on the board.</p>
+    <input id="famName3" maxlength="16" placeholder="Your name" autocomplete="off" autocapitalize="words">
+    <button class="btn" id="famClaim">That's me</button>
   </div>
   <div id="famHome" class="stack fam" hidden>
-    <p class="fine" style="margin:0">Playing as <b id="famWho"></b> · <button class="linkish" id="famOut">not you?</button></p>
+    <div class="row" style="justify-content:space-between;align-items:center"><div><div class="eyebrow">Playing as</div><h2 id="famWho" style="margin:0"></h2><div class="fine" id="famEmail"></div></div><button class="btn secondary small" id="famOut">Sign out</button></div>
+    <div id="famUpgrade" class="stack" hidden style="padding:12px;border:1px solid var(--line);border-radius:10px">
+      <p class="fine" style="margin:0">This name only lives on this phone. Add an email and password to keep it — and to sign in anywhere.</p>
+      <input id="famUpEmail" type="email" placeholder="Email (a parent's, for a young player)" autocomplete="email" autocapitalize="none">
+      <input id="famUpPass" type="password" placeholder="Password" autocomplete="new-password">
+      <button class="btn small" id="famUpgradeGo">Keep this account</button>
+    </div>
+    <div class="row" style="justify-content:space-between;align-items:center"><div class="fine">Two-step codes: <b id="famMfaState">off</b></div><button class="btn secondary small" id="famMfaOn">Set up</button><button class="btn secondary small" id="famMfaOff" hidden>Turn off</button></div>
+    <div><div class="eyebrow" style="margin-bottom:6px">Recent rounds</div><div id="famHistory" class="stack" style="gap:6px"></div></div>
+    <div><div class="eyebrow" style="margin:10px 0 6px">Play together</div>
     <div class="row" style="gap:8px"><input id="famGroupNew" maxlength="40" placeholder="New group name" style="flex:1"><button class="btn small" id="famCreate">Create</button></div>
-    <div class="row" style="gap:8px"><input id="famCode" maxlength="6" placeholder="Code from someone else" autocapitalize="characters" style="flex:1;letter-spacing:.14em"><button class="btn secondary small" id="famJoin">Join</button></div>
+    <div class="row" style="gap:8px;margin-top:8px"><input id="famCode" maxlength="6" placeholder="Code from someone else" autocapitalize="characters" style="flex:1;letter-spacing:.14em"><button class="btn secondary small" id="famJoin">Join</button></div></div>
     <div class="list" id="famGroups"></div>
   </div>
   <div id="famGroup" class="stack fam" hidden>
-    <div class="row" style="justify-content:space-between;align-items:center"><div><div class="eyebrow">Group code <span id="famGroupCode" class="code"></span></div><h2 id="famGroupName" style="margin:0"></h2></div><button class="btn secondary small" id="famBack">Groups</button></div>
+    <div class="row" style="justify-content:space-between;align-items:center"><div><div class="eyebrow">Group code <span id="famGroupCode" class="code"></span></div><h2 id="famGroupName" style="margin:0"></h2></div><button class="btn secondary small" id="famBack">Back</button></div>
     <div class="row" style="gap:8px"><select id="famCourse" style="flex:1"></select><button class="btn small" id="famStart">Start a match</button></div>
     <p class="fine" style="margin:0">A match freezes the course. Everyone in the group plays the same holes, whenever they like, and the board shows who's ahead.</p>
     <div class="list" id="famMatches"></div>
@@ -452,6 +479,14 @@ select{font:inherit;font-family:var(--display);font-weight:600;letter-spacing:.0
   <!-- the toast used to live inside #game, which is display:none on every other screen — so a
        message raised from the shop, the designer or the family screen was never visible -->
   <div class="toast" id="toast"></div>
+  <div class="overlay" id="mfaOverlay"><div class="panel stack" style="text-align:center">
+    <div><div class="eyebrow">Two-step codes</div><h2>Scan, then enter a code</h2></div>
+    <img id="mfaQr" alt="QR code for your authenticator app" style="width:180px;height:180px;margin:0 auto;background:#fff;border-radius:8px;padding:6px">
+    <div class="fine">Or type this key into the app:<br><code id="mfaSecret" style="user-select:all;font-size:13px"></code></div>
+    <input id="mfaCode" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="one-time-code" style="letter-spacing:.3em;text-align:center">
+    <button class="btn" id="mfaConfirm">Turn on</button>
+    <button class="btn secondary" id="mfaCancel">Cancel</button>
+  </div></div>
   <div class="overlay" id="boardOverlay"><div class="panel stack">
     <div><div class="eyebrow">Group leaderboard</div><h2 id="boardTitle">Match</h2></div>
     <div style="overflow-x:auto"><table id="boardTable"></table></div>
@@ -2243,7 +2278,7 @@ function ownsCourse(id){const p=PARKS.find(x=>x.id===id);return !p||!p.paid||App
 function unlockCourse(id){
   if(App.owned.indexOf(id)<0){App.owned.push(id);store('pdg.owned',App.owned);}
 }
-function show(id){$$('.screen').forEach(s=>s.classList.toggle('on',s.id===id));App.screen=id;if(id!=='game')Snd.setScene('menu');if(id==='title')startTitleScene();if(id==='character')startCharScene();if(id==='parks')renderParkList();if(id==='designer')Designer.open();if(id==='family')famRender();}
+function show(id){$$('.screen').forEach(s=>s.classList.toggle('on',s.id===id));App.screen=id;if(id!=='game')Snd.setScene('menu');if(id==='title')startTitleScene();if(id==='character')startCharScene();if(id==='parks')renderParkList();if(id==='designer')Designer.open();if(id==='family')famRender();if(id==='title')famSyncTitle();}
 $$('[data-nav]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.nav)));
 $('#btnPlay').addEventListener('click',()=>{App.mode='casual';$$('.modes .chip').forEach(c=>c.classList.toggle('on',c.dataset.mode==='casual'));$('#parksEyebrow').textContent='Choose a course';show('parks');});
 $('#btnChar').addEventListener('click',()=>show('character'));
@@ -2744,6 +2779,7 @@ function nextLie(){
 function finishRound(){
   const g=Game;const total=g.scores.reduce((a,s,i)=>a+s-g.holes[i].par,0);
   if(App.best[g.courseKey]===undefined||total<App.best[g.courseKey]){App.best[g.courseKey]=total;store('pdg.best',App.best);}
+  netPostRound(g);   // the server's copy of this round; queued if the phone is offline
   $('#scParkName').textContent=g.courseName;$('#scTitle').textContent=`${fmtScore(total)} · ${total<0?'Under par':total===0?'Even par':'Over par'}`;
   let h='<tr><th>Hole</th>'+g.holes.map(x=>`<th>${x.n}</th>`).join('')+'<th>Tot</th></tr>';
   h+='<tr><th>Par</th>'+g.holes.map(x=>`<td>${x.par}</td>`).join('')+`<td>${g.holes.reduce((a,x)=>a+x.par,0)}</td></tr>`;
@@ -3323,6 +3359,7 @@ function chFinish(stars,detail){
   const g=Game,c=g.challenge;g.chDone=true;
   const prev=ChStars[c.id]||0;const best=Math.max(prev,stars);
   const improved=stars>prev;ChStars[c.id]=best;chSave();
+  netPostStar(c.id,best);   // the server keeps the higher of the two
   setTimeout(()=>{
     $('#chrTitle').textContent=stars>0?(stars===3?'Perfect':stars===2?'Nicely done':'Cleared'):'Not this time';
     $('#chrName').textContent=c.name;
@@ -3478,121 +3515,280 @@ const Designer={tool:'tree',holes:[],idx:0,parkId:'smokies',brush:1,cv:null,ctx:
   }
 };
 
-// ---------- accounts and playing together ----------
-// No email, no password. A player is a Supabase anonymous user who has claimed a username; the
-// session token lives in localStorage so a child never types a credential twice. Players find each
-// other with a six-character group code. Everything is async and nothing here ever blocks a throw:
-// a score that fails to post is queued and retried, a leaderboard that fails to load says so.
+// ---------- accounts, sign-in, and playing together ----------
+// Every player signs in: an email and a password (a parent's email for a young child), and the
+// session token stays on the device so they are only ever asked once. Two-step codes are an
+// opt-in. Everything a player does — rounds, bests, challenge stars, matches — is recorded against
+// them on the server; the phone's localStorage is a cache of that from now on.
 //
-// There is no client library. The whole surface is four HTTP calls — anonymous sign-up, token
-// refresh, an RPC, and one filtered SELECT — and supabase-js would be the first dependency in a
-// single-file build that has none. The key below is the publishable key: public by design, and
+// There is no client library. Sign-up, sign-in, refresh, recovery, the user record, TOTP factors,
+// an RPC and one filtered SELECT are all plain fetch, and supabase-js would be the first dependency
+// in a single-file build that has none. The key below is the publishable key: public by design,
 // compiled into the shipped file on purpose. Row-level security is what protects the data.
 const NET={url:'https://nllnuysfcedgksmqndia.supabase.co',key:'sb_publishable_fIE_TuGmODdjYFgEt9V-Ww_ZesmeRh_'};
-const Net={auth:store('pdg.auth')||null,profile:store('pdg.profile')||null,groups:store('pdg.groups')||[],
-  pending:store('pdg.pending')||[],group:null,matches:[],busy:false,flushing:null};
-function netSave(){store('pdg.auth',Net.auth);store('pdg.profile',Net.profile);store('pdg.groups',Net.groups);store('pdg.pending',Net.pending);}
+const Net={auth:store('pdg.auth')||null,user:store('pdg.user')||null,profile:store('pdg.profile')||null,
+  groups:store('pdg.groups')||[],pending:store('pdg.pending')||[],outbox:store('pdg.outbox')||[],
+  group:null,matches:[],busy:false,flushing:null,mfa:store('pdg.mfa')||null,after:null,needName:false};
+function netSave(){for(const k of ['auth','user','profile','groups','pending','outbox','mfa'])store('pdg.'+k,Net[k]);}
+// The token says how far signed in we are: 'aal2' once the authenticator code has been given. A
+// session that is still 'aal1' for an account that has a verified factor is only half signed in —
+// on load as much as at sign-in, or a reload would walk straight past the code.
+function jwtClaims(tok){try{return JSON.parse(atob(String(tok).split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));}catch(e){return {};}}
+function netNeedsMfa(){return !!(Net.auth&&Net.user&&Net.user.factors&&Net.user.factors.length&&jwtClaims(Net.auth.access_token).aal!=='aal2');}
+// forget the player on this phone, without talking to the server
+// PostgREST turns the server's "two-step code needed" into a 403. That is not an item that can
+// never succeed — it is this phone not knowing yet that the account turned two-step codes on
+// (from another device, say). Keep the item, refresh what we know, and ask for the code.
+function netIsMfaRefusal(e){return !!(e&&e.status===403&&/two-step/i.test(e.message||''));}
+function netRequireMfa(){
+  if(!Net.auth)return;
+  Net.mfa={factorId:(Net.user&&Net.user.factors&&Net.user.factors[0]&&Net.user.factors[0].id)||null};netSave();famSyncTitle();
+  netLoadUser().then(()=>{if(Net.mfa&&!Net.mfa.factorId&&Net.user.factors[0]){Net.mfa.factorId=Net.user.factors[0].id;netSave();}
+    if(App.screen==='family')famRender();}).catch(()=>{});
+}
+function netDrop(){Net.auth=null;Net.user=null;Net.profile=null;Net.groups=[];Net.group=null;Net.matches=[];Net.mfa=null;Net.needName=false;
+  Net.pending=[];Net.outbox=[];   // whatever this player had queued must never post under the next one
+  App.best={};store('pdg.best',App.best);ChStars={};chSave();netSave();}
 function netOn(){return !!(Net.auth&&Net.auth.access_token);}
-// Every response is parsed the same way: PostgREST and GoTrue both put the human message in one of
-// a few fields, and a 204 has no body at all.
+// signed in with a name: the state every play button requires
+function accountReady(){return netOn()&&!!Net.profile&&!Net.mfa;}
+
+// ---- HTTP ----
 async function netRead(res){
   const txt=await res.text();let j=null;try{j=txt?JSON.parse(txt):null;}catch(e){}
   if(!res.ok){const m=(j&&(j.message||j.msg||j.error_description||j.error))||('HTTP '+res.status);
     const err=new Error(m);err.status=res.status;err.code=j&&(j.code||j.error_code);throw err;}
   return j;
 }
-async function netAuthCall(path,body){
-  const res=await fetch(NET.url+'/auth/v1/'+path,{method:'POST',headers:{apikey:NET.key,'Content-Type':'application/json'},body:JSON.stringify(body||{})});
-  const j=await netRead(res);
+function netHeaders(auth){const h={apikey:NET.key,'Content-Type':'application/json'};if(auth&&Net.auth)h.Authorization='Bearer '+Net.auth.access_token;return h;}
+function netSession(j){ // a GoTrue session, from sign-up, sign-in, refresh or an MFA verify
+  if(!j||!j.access_token)return null;
   Net.auth={access_token:j.access_token,refresh_token:j.refresh_token,expires_at:Date.now()+(j.expires_in||3600)*1000,uid:j.user&&j.user.id};
-  netSave();return Net.auth;
+  if(j.user)netSetUser(j.user);netSave();return Net.auth;
 }
-async function netSignIn(){
-  try{return await netAuthCall('signup',{});}
-  catch(e){if(e.code==='anonymous_provider_disabled'||/anonymous/i.test(e.message))throw new Error('Anonymous sign-ins are switched off in Supabase');throw e;}
+function netSetUser(u){Net.user={id:u.id,email:u.email||null,anon:!!u.is_anonymous,
+  factors:(u.factors||[]).filter(f=>f.status==='verified'&&f.factor_type==='totp').map(f=>({id:f.id,name:f.friendly_name}))};}
+async function netAuth(method,path,body,auth){
+  const res=await fetch(NET.url+'/auth/v1/'+path,{method,headers:netHeaders(auth),body:body===undefined?undefined:JSON.stringify(body)});
+  return netRead(res);
+}
+// One refresh at a time: on load three callers want the token at once, and GoTrue rotates the
+// refresh token, so a second POST with the same one would be refused.
+function netRefresh(){
+  if(Net.refreshing)return Net.refreshing;
+  if(!Net.auth||!Net.auth.refresh_token)return Promise.reject(new Error('Not signed in'));
+  Net.refreshing=(async()=>{try{
+    let j;const rt=Net.auth.refresh_token;
+    try{j=await netAuth('POST','token?grant_type=refresh_token',{refresh_token:rt});}
+    catch(e){if(e.status===400||e.status===401||e.status===403){netDrop();famSyncTitle();}throw e;}
+    if(!Net.auth||Net.auth.refresh_token!==rt)throw new Error('Signed out meanwhile');   // a sign-out beat the reply: do not resurrect
+    if(!netSession(j))throw new Error('Could not refresh the session');
+  }finally{Net.refreshing=null;}})();
+  return Net.refreshing;
 }
 async function netToken(){
   if(!Net.auth)return null;
-  if(Date.now()>Net.auth.expires_at-60000)await netAuthCall('token?grant_type=refresh_token',{refresh_token:Net.auth.refresh_token});
+  if(Date.now()>Net.auth.expires_at-60000)await netRefresh();
   return Net.auth.access_token;
 }
 async function netApi(method,path,body){
-  const tok=await netToken();if(!tok)throw new Error('Not connected');
-  const h={apikey:NET.key,Authorization:'Bearer '+tok,'Content-Type':'application/json'};
-  let res=await fetch(NET.url+'/rest/v1/'+path,{method,headers:h,body:body===undefined?undefined:JSON.stringify(body)});
-  if(res.status===401&&Net.auth.refresh_token){ // a token that expired between the check and the call
-    await netAuthCall('token?grant_type=refresh_token',{refresh_token:Net.auth.refresh_token});
-    h.Authorization='Bearer '+Net.auth.access_token;
-    res=await fetch(NET.url+'/rest/v1/'+path,{method,headers:h,body:body===undefined?undefined:JSON.stringify(body)});}
+  const tok=await netToken();if(!tok)throw new Error('Not signed in');
+  const go=()=>fetch(NET.url+'/rest/v1/'+path,{method,headers:netHeaders(true),body:body===undefined?undefined:JSON.stringify(body)});
+  let res=await go();
+  if(res.status===401&&Net.auth.refresh_token){await netRefresh();res=await go();}
   return netRead(res);
 }
 const rpc=(fn,args)=>netApi('POST','rpc/'+fn,args||{});
 
-// ---- what the screen calls ----
-async function netConnect(username){
-  if(!netOn())await netSignIn();
-  Net.profile=await rpc('ensure_profile',{p_username:username});
-  netSave();await netLoadGroups();return Net.profile;
+// ---- signing in ----
+async function netRegister(email,password,username){
+  const j=await netAuth('POST','signup',{email,password,data:{username}});
+  if(!netSession(j))return {needsConfirm:true};         // "confirm email" is on in the dashboard
+  return netAfterSignIn(username);
 }
+async function netSignIn(email,password){
+  const j=await netAuth('POST','token?grant_type=password',{email,password});
+  netSession(j);
+  // a verified authenticator means this session is only half signed in until the code is given
+  if(netNeedsMfa()){Net.mfa={factorId:Net.user.factors[0].id};netSave();return {mfa:true};}
+  return netAfterSignIn();
+}
+async function netMfaVerify(code){
+  if(!Net.mfa)throw new Error('No code was asked for');
+  if(!Net.mfa.factorId){await netLoadUser();if(Net.user.factors[0])Net.mfa.factorId=Net.user.factors[0].id;else throw new Error('Could not find the authenticator — reload and try again');}
+  const ch=await netAuth('POST','factors/'+Net.mfa.factorId+'/challenge',{},true);
+  const j=await netAuth('POST','factors/'+Net.mfa.factorId+'/verify',{challenge_id:ch.id,code:String(code).trim()},true);
+  if(!netSession(j))throw new Error('That code was not accepted');
+  Net.mfa=null;netSave();
+  return netAfterSignIn();
+}
+// Loads (or claims) the profile and pulls the player's history down. Called after any sign-in.
+async function netAfterSignIn(username){
+  const rows=await netApi('GET','profiles?select=id,username,avatar&id=eq.'+Net.auth.uid);
+  if(rows&&rows.length){Net.profile=rows[0];Net.needName=false;}
+  else if(username){Net.profile=await rpc('ensure_profile',{p_username:username});Net.needName=false;}
+  else{Net.profile=null;Net.needName=true;netSave();return {needName:true};}
+  netSave();
+  await netLoadGroups().catch(()=>{});
+  if(Net.pending.length)netFlush();
+  netSyncDown();
+  return {ok:true};
+}
+async function netClaimName(username){Net.profile=await rpc('ensure_profile',{p_username:username});Net.needName=false;netSave();await netLoadGroups().catch(()=>{});if(Net.pending.length)netFlush();netSyncDown();return Net.profile;}
+async function netForgot(email){await netAuth('POST','recover',{email});}
+// An anonymous player from the earlier build keeps their name: the account is given an email and a
+// password in place rather than replaced.
+async function netUpgrade(email,password){
+  const u=await netAuth('PUT','user',{email,password},true);
+  if(u&&u.id)netSetUser(u);netSave();
+  return {needsConfirm:!(Net.user&&Net.user.email)||!!(u&&u.new_email)};
+}
+async function netLoadUser(){
+  if(!await netToken())return;   // an expired token is refreshed first; a dead one signs out in netRefresh
+  let u;
+  try{u=await netAuth('GET','user',undefined,true);}
+  catch(e){if(e.status===401||e.status===403){netDrop();famSyncTitle();}throw e;}
+  if(u&&u.id){netSetUser(u);netSave();}
+}
+async function netSignOut(){
+  try{if(netOn())await netAuth('POST','logout',{},true);}catch(e){}
+  netDrop();
+}
+
+// ---- two-step codes ----
+async function netMfaEnroll(){return netAuth('POST','factors',{factor_type:'totp',friendly_name:'Parklands'},true);}   // {id, totp:{qr_code, secret, uri}}
+async function netMfaConfirm(factorId,code){
+  const ch=await netAuth('POST','factors/'+factorId+'/challenge',{},true);
+  const j=await netAuth('POST','factors/'+factorId+'/verify',{challenge_id:ch.id,code:String(code).trim()},true);
+  netSession(j);await netLoadUser();
+}
+async function netMfaRemove(factorId){await netAuth('DELETE','factors/'+factorId,undefined,true);await netLoadUser();}
+
+// ---- history ----
+// Posting a round or a star is fire-and-forget from the game's point of view. Items that cannot
+// reach the server wait in the outbox; a refusal the server actually gave (a 4xx) means the item can
+// never succeed, so it is dropped rather than left to block everything behind it. A 5xx, a timeout
+// or a rate limit is the server's bad moment, not the item's: it waits.
+function netRefused(e){return !!(e&&e.status>=400&&e.status<500&&e.status!==401&&e.status!==408&&e.status!==429);}
+function netQueue(fn,args){Net.outbox.push({fn,args});netSave();return netFlushOutbox();}
+async function netFlushOutbox(){
+  if(Net.obBusy)return Net.obFlushing;
+  if(!Net.outbox.length||!netOn())return false;
+  Net.obBusy=true;
+  Net.obFlushing=(async()=>{try{
+    while(Net.outbox.length){
+      const it=Net.outbox[0];
+      try{await rpc(it.fn,it.args);}
+      catch(e){if(netIsMfaRefusal(e)){netRequireMfa();return false;}
+        if(netRefused(e)){Net.outbox.shift();netSave();continue;}return false;}
+      Net.outbox.shift();netSave();
+    }return true;}finally{Net.obBusy=false;Net.obFlushing=null;}})();
+  return Net.obFlushing;
+}
+function netPostRound(g){
+  if(!netOn())return;
+  const par=g.holes.reduce((a,h)=>a+h.par,0),score=g.scores.reduce((a,b)=>a+b,0);
+  return netQueue('post_round',{p_park:g.park.id,p_key:g.courseKey,p_name:g.courseName,
+    p_mode:g.tourney?'tournament':g.match?'match':'casual',p_holes:g.holes.length,p_par:par,p_score:score,
+    p_scores:g.scores.slice(),p_match:g.match?g.match.id:null});
+}
+function netPostStar(id,stars){if(netOn())return netQueue('post_star',{p_challenge:id,p_stars:stars});}
+// The server's record wins over the phone's: a best is the lower of the two, a star count the higher.
+async function netSyncDown(){
+  if(!accountReady())return false;
+  try{
+    await netFlushOutbox();
+    let stats,stars;
+    try{[stats,stars]=await Promise.all([rpc('my_stats'),rpc('my_stars')]);}
+    catch(e){if(netIsMfaRefusal(e))netRequireMfa();throw e;}
+    for(const s of stats||[]){if(App.best[s.course_key]===undefined||s.best<App.best[s.course_key])App.best[s.course_key]=s.best;}
+    store('pdg.best',App.best);
+    for(const s of stars||[]){if((ChStars[s.challenge_id]||0)<s.stars)ChStars[s.challenge_id]=s.stars;}
+    chSave();
+    return true;
+  }catch(e){return false;}
+}
+
+// ---- groups and matches ----
 async function netLoadGroups(){Net.groups=await rpc('my_groups')||[];netSave();return Net.groups;}
 async function netCreateGroup(name){const g=await rpc('create_group',{p_name:name});await netLoadGroups();return g;}
 async function netJoinGroup(code){const g=await rpc('join_group',{p_code:code});await netLoadGroups();return g;}
 async function netOpenMatches(groupId){
   Net.matches=await netApi('GET',`matches?select=id,course_name,park_id,holes,status,created_at,created_by&group_id=eq.${groupId}&status=eq.open&order=created_at.desc`)||[];
   return Net.matches;}
-// The layout is frozen into the match the moment it is created: everyone who joins throws exactly
-// these holes, whatever a later build's generator would deal.
-async function netCreateMatch(groupId,park,holes,name){
-  return rpc('create_match',{p_group:groupId,p_course_name:name,p_park_id:park.id,p_holes:holes});}
+async function netCreateMatch(groupId,park,holes,name){return rpc('create_match',{p_group:groupId,p_course_name:name,p_park_id:park.id,p_holes:holes});}
 async function netBoard(matchId){return await rpc('match_board',{p_match:matchId})||[];}
-// Posting a hole is fire-and-forget from the game's point of view. The server ignores a repeat of
-// the same hole, so a retry can never double-count, and a failure simply waits for the next try.
 function netPostScore(matchId,hole,strokes,par){
-  const item={p_match:matchId,p_hole:hole,p_strokes:strokes,p_par:par};
-  Net.pending.push(item);netSave();
-  return netFlush();
-}
-// One flush at a time; a second caller gets the first one's promise rather than a `false`, so a
-// scorecard that asks for the board right after the last hole posted waits for that post. A reply
-// the server *gave* (a closed match, not a member) means the item can never succeed: it is dropped
-// and the queue moves on. Only a failure to reach the server at all keeps the item for next time.
+  Net.pending.push({p_match:matchId,p_hole:hole,p_strokes:strokes,p_par:par});netSave();return netFlush();}
 async function netFlush(){
   if(Net.busy)return Net.flushing;
   if(!Net.pending.length||!netOn())return false;
   Net.busy=true;
-  Net.flushing=(async()=>{
-    try{
-      while(Net.pending.length){
-        try{await rpc('post_score',Net.pending[0]);}
-        catch(e){if(e&&e.status&&e.status!==401){Net.pending.shift();netSave();continue;}return false;}
-        Net.pending.shift();netSave();
-      }
-      return true;
-    }finally{Net.busy=false;Net.flushing=null;}
-  })();
+  Net.flushing=(async()=>{try{
+    while(Net.pending.length){
+      try{await rpc('post_score',Net.pending[0]);}
+      catch(e){if(netIsMfaRefusal(e)){netRequireMfa();return false;}
+        if(netRefused(e)){Net.pending.shift();netSave();continue;}return false;}
+      Net.pending.shift();netSave();
+    }return true;}finally{Net.busy=false;Net.flushing=null;}})();
   return Net.flushing;
 }
-function netDisconnect(){Net.auth=null;Net.profile=null;Net.groups=[];Net.group=null;Net.matches=[];netSave();}
+
+// ---- the gate ----
+// Every play button runs through here. Signed out, the tap is remembered and the account screen
+// opens; the moment the player is in, the tap is replayed and they land where they were going.
+const GATED=['btnPlay','btnTourney','btnChallenges','btnChar','btnDesign'];
+document.addEventListener('click',e=>{
+  const b=e.target.closest&&e.target.closest(GATED.map(id=>'#'+id).join(','));
+  if(!b||accountReady())return;
+  e.stopPropagation();e.preventDefault();
+  Net.after=b.id;show('family');
+  toast('Sign in to play','Your rounds and scores are kept for you');
+},true);
+function netResume(){const id=Net.after;Net.after=null;if(id&&accountReady()){const b=$('#'+id);if(b)b.click();}}
+function famSyncTitle(){const b=$('#btnFamily');if(!b)return;
+  b.textContent=accountReady()?'Account · '+Net.profile.username:'Sign in to play';}
 
 // ---- the screen ----
-function famPane(which){for(const id of ['famConnect','famHome','famGroup'])$('#'+id).hidden=(id!==which);}
+function famPane(which){for(const id of ['famConnect','famMfa','famName2','famHome','famGroup'])$('#'+id).hidden=(id!==which);}
 function famErr(e){toast('Could not do that',(e&&e.message)||'');}
+function famEsc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function famMode(m){ // 'in' or 'new'
+  $('#famConnect').dataset.mode=m;
+  $('#famName').hidden=(m!=='new');$('#famGo').hidden=(m!=='in');$('#famRegister').hidden=(m!=='new');$('#famForgot').hidden=(m!=='in');
+  $('#famSwitch').textContent=m==='in'?'New here? Create an account':'Have an account? Sign in';
+  $('#famHint').textContent=m==='in'?'Signed in once, this phone remembers you.':'For a young player, use a parent\'s email. The name is what the family sees.';
+}
 function famRender(){
-  if(!Net.profile){famPane('famConnect');return;}
+  if(Net.mfa){famPane('famMfa');return;}
+  if(!netOn()){famPane('famConnect');famMode($('#famConnect').dataset.mode||'in');return;}
+  if(!Net.profile||Net.needName){famPane('famName2');return;}
   if(Net.group){famRenderGroup();return;}
-  famPane('famHome');$('#famWho').textContent=Net.profile.username;
+  famPane('famHome');
+  $('#famWho').textContent=Net.profile.username;
+  const u=Net.user||{};
+  $('#famEmail').textContent=u.email?u.email:'no email yet';
+  $('#famUpgrade').hidden=!u.anon;
+  const on=!!(u.factors&&u.factors.length);
+  $('#famMfaState').textContent=on?'on':'off';$('#famMfaOn').hidden=on;$('#famMfaOff').hidden=!on;
   const list=$('#famGroups');list.innerHTML='';
   if(!Net.groups.length)list.innerHTML='<p class="fine">No groups yet. Make one and read the code to the others, or type a code you were given.</p>';
   for(const g of Net.groups){
     const b=document.createElement('button');b.className='park fam';
     b.innerHTML=`<div class="sw" style="background:linear-gradient(#5f95d6,#9bb7cf)"></div><div><h3>${famEsc(g.name)}</h3><div class="meta">Tap to see matches</div></div><div class="code">${famEsc(g.code)}</div>`;
     b.addEventListener('click',()=>{Net.group=g;famRenderGroup();});list.appendChild(b);}
+  famRenderHistory();
 }
-function famEsc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function famRenderHistory(){
+  const el=$('#famHistory');el.innerHTML='<p class="fine">Loading…</p>';
+  rpc('my_rounds',{p_limit:8}).then(rows=>{
+    if(!rows||!rows.length){el.innerHTML='<p class="fine">No rounds yet. Go play one.</p>';return;}
+    el.innerHTML=rows.map(r=>`<div class="hist"><div><b>${famEsc(r.course_name)}</b><div class="meta">${r.holes} holes · ${famEsc(r.mode)} · ${famAgo(r.played_at)}</div></div><div class="best">${fmtScore(r.to_par)}</div></div>`).join('');
+  }).catch(()=>{el.innerHTML='<p class="fine">Could not load your rounds.</p>';});
+}
 function famRenderGroup(){
   const g=Net.group;famPane('famGroup');
   $('#famGroupName').textContent=g.name;$('#famGroupCode').textContent=g.code;
-  // courses you can start a match on: every park you own, plus anything built in the designer
   const sel=$('#famCourse');sel.innerHTML='';
   PARKS.filter(p=>ownsCourse(p.id)).forEach(p=>{const o=document.createElement('option');o.value='park:'+p.id;o.textContent=p.name;sel.appendChild(o);});
   App.courses.forEach((c,i)=>{const o=document.createElement('option');o.value='custom:'+i;o.textContent=c.name+' (yours)';sel.appendChild(o);});
@@ -3602,7 +3798,7 @@ function famRenderGroup(){
     for(const m of ms){
       const card=document.createElement('div');card.className='park fam static';
       const pk=PARKS.find(p=>p.id===m.park_id)||PARKS[0];
-      card.innerHTML=`<div class="sw" style="background:linear-gradient(${pk.sky[0]},${pk.sky[1]})"><i style="background:${pk.ground.fair}"></i></div><div><h3>${famEsc(m.course_name)}</h3><div class="meta">${m.holes.length} holes · ${famAgo(m.created_at)}</div></div><div class="row" style="gap:6px"><button class="btn small" data-play="${m.id}">Play</button><button class="btn secondary small" data-board="${m.id}">Board</button></div>`;
+      card.innerHTML=`<div class="sw" style="background:linear-gradient(${pk.sky[0]},${pk.sky[1]})"><i style="background:${pk.ground.fair}"></i></div><div><h3>${famEsc(m.course_name)}</h3><div class="meta">${m.holes.length} holes · ${famAgo(m.created_at)}</div></div><div class="row" style="gap:6px"><button class="btn small" data-play="${famEsc(m.id)}">Play</button><button class="btn secondary small" data-board="${famEsc(m.id)}">Board</button></div>`;
       card.querySelector('[data-play]').addEventListener('click',()=>startMatch(m));
       card.querySelector('[data-board]').addEventListener('click',()=>famShowBoard(m));
       list.appendChild(card);}
@@ -3620,8 +3816,6 @@ function famShowBoard(m){
   $('#boardTitle').textContent=m.course_name;$('#boardTable').innerHTML='<tr><td class="fine">Loading…</td></tr>';$('#boardOverlay').classList.add('on');
   netBoard(m.id).then(rows=>{$('#boardTable').innerHTML=boardHtml(rows);}).catch(e=>{$('#boardTable').innerHTML='<tr><td class="fine">Could not load.</td></tr>';famErr(e);});
 }
-// A match is played on the holes frozen into it, never re-dealt. `n` is restored because the
-// server copy came through JSON and the game numbers holes from it.
 function startMatch(m){
   const pk=PARKS.find(p=>p.id===m.park_id)||PARKS[0];
   if(!ownsCourse(pk.id)){openShop(pk);return;}
@@ -3637,21 +3831,60 @@ async function famStartMatch(){
   try{await netCreateMatch(Net.group.id,park,holes,name);toast('Match started',name+' · everyone in '+Net.group.name+' can play it');famRenderGroup();}
   catch(e){famErr(e);}finally{b.disabled=false;}
 }
-$('#btnFamily').addEventListener('click',()=>{Net.group=null;famRender();show('family');});
-$('#famGo').addEventListener('click',async()=>{
-  const name=$('#famName').value.trim();if(name.length<2){toast('Pick a name','Two to sixteen letters or numbers');return;}
-  const b=$('#famGo');b.disabled=true;b.textContent='Connecting…';
-  try{await netConnect(name);famRender();toast('Connected','Playing as '+Net.profile.username);}
-  catch(e){famErr(e);}finally{b.disabled=false;b.textContent='Connect';}
+// one busy-button wrapper for every async tap on this screen
+function famTap(btnId,label,fn){const b=$('#'+btnId);b.addEventListener('click',async()=>{const was=b.textContent;b.disabled=true;if(label)b.textContent=label;
+  try{await fn();}catch(e){famErr(e);}finally{b.disabled=false;b.textContent=was;}});}
+
+$('#btnFamily').addEventListener('click',()=>{Net.group=null;show('family');});
+$('#famSwitch').addEventListener('click',()=>famMode($('#famConnect').dataset.mode==='in'?'new':'in'));
+famTap('famGo','Signing in…',async()=>{
+  const email=$('#famEmailIn').value.trim(),pass=$('#famPass').value;
+  if(!email||!pass){toast('Email and password','Both, please');return;}
+  const r=await netSignIn(email,pass);
+  $('#famPass').value='';famRender();
+  if(r.mfa){toast('One more step','Enter the code from your authenticator');return;}
+  if(r.needName)return;
+  toast('Signed in','Playing as '+Net.profile.username);famSyncTitle();netResume();
 });
-$('#famCreate').addEventListener('click',async()=>{const n=$('#famGroupNew').value.trim()||'Family';try{const g=await netCreateGroup(n);$('#famGroupNew').value='';famRender();toast('Group made','Code '+g.code+' — read it to the others');}catch(e){famErr(e);}});
-$('#famJoin').addEventListener('click',async()=>{const c=$('#famCode').value.trim();if(c.length!==6){toast('Codes are six characters','');return;}try{const g=await netJoinGroup(c);$('#famCode').value='';famRender();toast('Joined',g.name);}catch(e){famErr(e);}});
+famTap('famRegister','Creating…',async()=>{
+  const name=$('#famName').value.trim(),email=$('#famEmailIn').value.trim(),pass=$('#famPass').value;
+  if(name.length<2){toast('Pick a name','Two to sixteen letters or numbers');return;}
+  if(!email||pass.length<6){toast('Email and a password','Six characters or more');return;}
+  const r=await netRegister(email,pass,name);
+  $('#famPass').value='';
+  if(r.needsConfirm){toast('Check that email','Tap the link in it, then sign in here');famMode('in');return;}
+  famRender();toast('Welcome','Playing as '+Net.profile.username);famSyncTitle();netResume();
+});
+famTap('famForgot','Sending…',async()=>{const email=$('#famEmailIn').value.trim();if(!email){toast('Type the email first','');return;}await netForgot(email);toast('Sent','A reset link is on its way');});
+famTap('famVerify','Checking…',async()=>{const r=await netMfaVerify($('#famCode2').value);$('#famCode2').value='';famRender();if(r.needName)return;toast('Signed in','Playing as '+Net.profile.username);famSyncTitle();netResume();});
+$('#famMfaCancel').addEventListener('click',()=>{netDrop();famRender();famSyncTitle();});
+famTap('famClaim','Saving…',async()=>{const name=$('#famName3').value.trim();if(name.length<2){toast('Pick a name','Two to sixteen letters or numbers');return;}await netClaimName(name);famRender();toast('Welcome','Playing as '+name);famSyncTitle();netResume();});
+famTap('famCreate',null,async()=>{const n=$('#famGroupNew').value.trim()||'Family';const g=await netCreateGroup(n);$('#famGroupNew').value='';famRender();toast('Group made','Code '+g.code+' — read it to the others');});
+famTap('famJoin',null,async()=>{const c=$('#famCode').value.trim();if(c.length!==6){toast('Codes are six characters','');return;}const g=await netJoinGroup(c);$('#famCode').value='';famRender();toast('Joined',g.name);});
 $('#famBack').addEventListener('click',()=>{Net.group=null;famRender();});
 $('#famStart').addEventListener('click',famStartMatch);
-$('#famOut').addEventListener('click',()=>{netDisconnect();famRender();});
+famTap('famOut','Signing out…',async()=>{await netSignOut();famRender();famSyncTitle();toast('Signed out','');});
+famTap('famUpgradeGo','Saving…',async()=>{const email=$('#famUpEmail').value.trim(),pass=$('#famUpPass').value;if(!email||pass.length<6){toast('Email and a password','Six characters or more');return;}
+  const r=await netUpgrade(email,pass);$('#famUpPass').value='';famRender();toast(r.needsConfirm?'Check that email':'Account secured',r.needsConfirm?'Tap the link to finish':'Sign in with it on any phone');});
+// two-step codes
+let mfaDraft=null;
+famTap('famMfaOn','Preparing…',async()=>{mfaDraft=await netMfaEnroll();
+  $('#mfaQr').src=mfaDraft.totp.qr_code;$('#mfaSecret').textContent=mfaDraft.totp.secret;$('#mfaCode').value='';$('#mfaOverlay').classList.add('on');});
+famTap('mfaConfirm','Checking…',async()=>{if(!mfaDraft)return;await netMfaConfirm(mfaDraft.id,$('#mfaCode').value);mfaDraft=null;$('#mfaOverlay').classList.remove('on');famRender();toast('Two-step codes are on','You will be asked for one at sign-in');});
+$('#mfaCancel').addEventListener('click',()=>{mfaDraft=null;$('#mfaOverlay').classList.remove('on');});
+famTap('famMfaOff','Removing…',async()=>{const f=Net.user&&Net.user.factors[0];if(!f)return;await netMfaRemove(f.id);famRender();toast('Two-step codes are off','');});
 $('#boardClose').addEventListener('click',()=>$('#boardOverlay').classList.remove('on'));
-// anything queued from a round that lost its connection goes up as soon as the app is back
-if(netOn()&&Net.pending.length)netFlush();
+
+// on load: refresh what we know about the player, push anything that waited, pull their history
+if(netNeedsMfa()&&!Net.mfa){Net.mfa={factorId:Net.user.factors[0].id};netSave();}
+famSyncTitle();
+if(netOn()){netLoadUser().then(()=>{
+    if(netNeedsMfa()&&!Net.mfa){Net.mfa={factorId:Net.user.factors[0].id};netSave();famSyncTitle();if(App.screen==='family')famRender();}
+    else if(Net.mfa&&!netNeedsMfa()){Net.mfa=null;netSave();famSyncTitle();
+      if(!Net.profile)netAfterSignIn().catch(()=>{}).then(()=>{if(App.screen==='family')famRender();});   // sign-in had stopped at the code: finish it
+      else{if(App.screen==='family')famRender();if(Net.pending.length)netFlush();netSyncDown();}}
+  }).catch(()=>{});
+  if(accountReady()){if(Net.pending.length)netFlush();netSyncDown();}}
 
 // keep game state across live republishes
 try{if(window.claude&&window.claude.hot){window.claude.hot.snapshot(()=>({screen:App.screen,avatar:App.avatar}));}}catch(e){}
