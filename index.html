@@ -54,6 +54,13 @@ h3{font-size:19px;font-weight:600}
 .park .best{font-family:var(--display);font-size:22px;font-weight:800;color:var(--accent2);font-variant-numeric:tabular-nums;text-align:right;line-height:1}
 .park .best small{display:block;font-size:11px;color:var(--muted);letter-spacing:.1em;font-weight:600}
 .park.locked .sw{filter:saturate(.35) brightness(.72)}
+.fam input,.fam select{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--paper);font:inherit;font-size:17px}
+.fam .code{font-family:var(--display);font-size:22px;font-weight:800;letter-spacing:.18em;color:var(--accent2)}
+.park.fam{grid-template-columns:48px 1fr auto}
+.park.fam .sw{width:48px;height:48px}
+.park.static{cursor:default}
+.linkish{background:none;border:0;padding:8px 6px;margin:-8px -6px;min-height:36px;color:var(--accent2);font:inherit;text-decoration:underline;cursor:pointer}
+#scStand tr.me td,#boardTable tr.me td{color:var(--accent2);font-weight:700}
 .chcard.locked{opacity:.62}
 .chlock{font-family:var(--display);font-size:16px;font-weight:800;color:var(--accent2);white-space:nowrap}
 .park .price{font-family:var(--display);font-size:19px;font-weight:800;color:var(--paper);text-align:right;line-height:1;white-space:nowrap}
@@ -62,7 +69,7 @@ h3{font-size:19px;font-weight:600}
 /* HUD */
 #game{padding:0;pointer-events:none}
 #game.intro .bottom,#game.intro .minimap{display:none}
-#game.intro .toast{top:30%}
+#game.intro ~ .toast{top:30%}
 #game .overlay,#game .discs,#game .minimap,#game .iconbtn,#game .shape{pointer-events:auto}
 .hud{position:absolute;left:0;right:0;top:0;padding:max(10px,env(safe-area-inset-top)) 12px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;pointer-events:none}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
@@ -106,7 +113,8 @@ h3{font-size:19px;font-weight:600}
 .minimap{position:absolute;right:12px;top:calc(max(10px,env(safe-area-inset-top)) + 78px);width:84px;height:150px;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:rgba(9,20,14,.6);pointer-events:auto}
 .minimap canvas{width:100%;height:100%;display:block}
 .iconbtn{pointer-events:auto;background:var(--panel);border:1px solid var(--line);color:var(--paper);border-radius:8px;width:44px;height:44px;font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
-.toast{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:clamp(40px,12vw,72px);letter-spacing:.04em;color:var(--paper);text-shadow:0 4px 24px rgba(0,0,0,.6);opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;text-align:center;line-height:.95}
+#shopOverlay,#boardOverlay{position:fixed;z-index:30}
+.toast{position:fixed;left:50%;top:38%;z-index:40;transform:translate(-50%,-50%);font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:clamp(40px,12vw,72px);letter-spacing:.04em;color:var(--paper);text-shadow:0 4px 24px rgba(0,0,0,.6);opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;text-align:center;line-height:.95}
 .toast.on{opacity:1;transform:translate(-50%,-50%) scale(1.05)}
 .toast small{display:block;font-size:18px;letter-spacing:.2em;color:var(--accent2);margin-top:8px}
 .overlay{position:absolute;inset:0;background:rgba(9,20,14,.72);display:none;align-items:center;justify-content:center;padding:20px}
@@ -279,6 +287,28 @@ select{font:inherit;font-family:var(--display);font-weight:600;letter-spacing:.0
     <button class="btn secondary" id="btnChar" style="flex:1">Player</button>
     <button class="btn secondary" id="btnDesign" style="flex:1">Course designer</button>
   </div>
+  <button class="btn secondary" id="btnFamily" style="background:#3f6d37">Play together</button>
+</section>
+
+<section id="family" class="screen">
+  <div class="topbar"><div><div class="eyebrow">Play together</div><h2>Family</h2></div><button class="btn secondary small" data-nav="title">Back</button></div>
+  <div id="famConnect" class="stack fam">
+    <p class="fine" style="margin:0">Pick a name your family will recognise. No email, no password — the name is yours on this device from now on.</p>
+    <input id="famName" maxlength="16" placeholder="Your name" autocomplete="off" autocapitalize="words">
+    <button class="btn" id="famGo">Connect</button>
+  </div>
+  <div id="famHome" class="stack fam" hidden>
+    <p class="fine" style="margin:0">Playing as <b id="famWho"></b> · <button class="linkish" id="famOut">not you?</button></p>
+    <div class="row" style="gap:8px"><input id="famGroupNew" maxlength="40" placeholder="New group name" style="flex:1"><button class="btn small" id="famCreate">Create</button></div>
+    <div class="row" style="gap:8px"><input id="famCode" maxlength="6" placeholder="Code from someone else" autocapitalize="characters" style="flex:1;letter-spacing:.14em"><button class="btn secondary small" id="famJoin">Join</button></div>
+    <div class="list" id="famGroups"></div>
+  </div>
+  <div id="famGroup" class="stack fam" hidden>
+    <div class="row" style="justify-content:space-between;align-items:center"><div><div class="eyebrow">Group code <span id="famGroupCode" class="code"></span></div><h2 id="famGroupName" style="margin:0"></h2></div><button class="btn secondary small" id="famBack">Groups</button></div>
+    <div class="row" style="gap:8px"><select id="famCourse" style="flex:1"></select><button class="btn small" id="famStart">Start a match</button></div>
+    <p class="fine" style="margin:0">A match freezes the course. Everyone in the group plays the same holes, whenever they like, and the board shows who's ahead.</p>
+    <div class="list" id="famMatches"></div>
+  </div>
 </section>
 
 <section id="parks" class="screen">
@@ -371,7 +401,6 @@ select{font:inherit;font-family:var(--display);font-weight:600;letter-spacing:.0
   <button class="btn small replaybtn" id="btnReplay" hidden>▶ Replay</button>
   <div class="replaytag" id="replayTag" hidden><span>Replay</span><b id="replayTxt">Slow motion</b></div>
   <div class="chchip" id="chChip" hidden><div class="g" id="chGoal"></div><div class="s" id="chState"></div><div id="chBest"></div></div>
-  <div class="toast" id="toast"></div>
   <div class="bottom">
     <div class="discs" id="discs" hidden></div>
     <div class="bend" id="bendRow" hidden><span>Hyzer</span><input type="range" id="bend" min="-100" max="100" value="0" step="5" aria-label="Shot shape"><span>Anhyzer</span></div>
@@ -389,7 +418,7 @@ select{font:inherit;font-family:var(--display);font-weight:600;letter-spacing:.0
   <div class="overlay" id="scoreOverlay"><div class="panel stack">
     <div><div class="eyebrow" id="scParkName">Scorecard</div><h2 id="scTitle">Round complete</h2></div>
     <div style="overflow-x:auto"><table id="scTable"></table></div>
-    <div id="scStandWrap" hidden><div class="eyebrow" style="margin-bottom:6px">Final standings</div><div style="overflow-x:auto"><table id="scStand"></table></div></div>
+    <div id="scStandWrap" hidden><div class="eyebrow" id="scStandLbl" style="margin-bottom:6px">Final standings</div><div style="overflow-x:auto"><table id="scStand"></table></div></div>
     <div class="row"><button class="btn" id="scAgain" style="flex:1">Play again</button><button class="btn secondary" id="scParks" style="flex:1">Parks</button></div>
   </div></div>
   <div class="overlay" id="lbOverlay"><div class="panel stack">
@@ -405,14 +434,7 @@ select{font:inherit;font-family:var(--display);font-weight:600;letter-spacing:.0
     <div class="fine" id="chrGoal"></div>
     <div class="row"><button class="btn" id="chrRetry" style="flex:1">Try again</button><button class="btn secondary" id="chrBack" style="flex:1">Challenges</button></div>
   </div></div>
-  <div class="overlay" id="shopOverlay"><div class="panel stack">
-    <div><div class="eyebrow" id="shopEyebrow">Pro Shop</div><h2 id="shopTitle">Course</h2></div>
-    <p class="fine" id="shopBlurb" style="margin:0"></p>
-    <div class="fine" id="shopWhat"></div>
-    <button class="btn" id="shopBuy">Unlock</button>
-    <button class="btn secondary" id="shopClose">Not now</button>
-    <div class="fine" id="shopNote" style="opacity:.7"></div>
-  </div></div>
+
   <div class="overlay" id="menuOverlay"><div class="panel stack">
     <h2>Paused</h2>
     <button class="btn" id="mResume">Resume</button>
@@ -423,6 +445,27 @@ select{font:inherit;font-family:var(--display);font-weight:600;letter-spacing:.0
     <button class="btn secondary" id="mQuit">Quit to parks</button>
   </div></div>
 </section>
+
+<!-- Opened from screens other than #game, so they live outside every section and position
+     against the viewport. The scorecard, pause and challenge-result overlays are game-only and stay
+     inside #game on purpose. -->
+  <!-- the toast used to live inside #game, which is display:none on every other screen — so a
+       message raised from the shop, the designer or the family screen was never visible -->
+  <div class="toast" id="toast"></div>
+  <div class="overlay" id="boardOverlay"><div class="panel stack">
+    <div><div class="eyebrow">Group leaderboard</div><h2 id="boardTitle">Match</h2></div>
+    <div style="overflow-x:auto"><table id="boardTable"></table></div>
+    <button class="btn secondary" id="boardClose">Close</button>
+  </div></div>
+  <div class="overlay" id="shopOverlay"><div class="panel stack">
+    <div><div class="eyebrow" id="shopEyebrow">Pro Shop</div><h2 id="shopTitle">Course</h2></div>
+    <p class="fine" id="shopBlurb" style="margin:0"></p>
+    <div class="fine" id="shopWhat"></div>
+    <button class="btn" id="shopBuy">Unlock</button>
+    <button class="btn secondary" id="shopClose">Not now</button>
+    <div class="fine" id="shopNote" style="opacity:.7"></div>
+  </div></div>
+
 
 <script>
 /**
@@ -2200,7 +2243,7 @@ function ownsCourse(id){const p=PARKS.find(x=>x.id===id);return !p||!p.paid||App
 function unlockCourse(id){
   if(App.owned.indexOf(id)<0){App.owned.push(id);store('pdg.owned',App.owned);}
 }
-function show(id){$$('.screen').forEach(s=>s.classList.toggle('on',s.id===id));App.screen=id;if(id!=='game')Snd.setScene('menu');if(id==='title')startTitleScene();if(id==='character')startCharScene();if(id==='parks')renderParkList();if(id==='designer')Designer.open();}
+function show(id){$$('.screen').forEach(s=>s.classList.toggle('on',s.id===id));App.screen=id;if(id!=='game')Snd.setScene('menu');if(id==='title')startTitleScene();if(id==='character')startCharScene();if(id==='parks')renderParkList();if(id==='designer')Designer.open();if(id==='family')famRender();}
 $$('[data-nav]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.nav)));
 $('#btnPlay').addEventListener('click',()=>{App.mode='casual';$$('.modes .chip').forEach(c=>c.classList.toggle('on',c.dataset.mode==='casual'));$('#parksEyebrow').textContent='Choose a course';show('parks');});
 $('#btnChar').addEventListener('click',()=>show('character'));
@@ -2390,7 +2433,8 @@ renderDiffChips();
 const Game={on:false,park:null,holes:[],idx:0,scores:[],strokes:0,world:null,av:null,disc:null,discIdx:0,aim:0,phase:'aim',flight:null,player:{x:0,y:0,z:0},wind:{x:0,z:0,mph:0},camMode:0,trail:null,trailPts:[],animT:0,pending:null,celebrate:0,courseKey:null,courseName:'',
   hand:(App.avatar&&App.avatar.hand)||1,bend:0,preview:null,previewDirty:true,previewPower:0.85,tour:null,time:0};
 const discMesh=(()=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(0.105,0.11,0.018,24),new THREE.MeshStandardMaterial({color:C('#ff5a36'),roughness:0.35,metalness:0.05}));m.castShadow=true;return m;})();
-function startRound(park,holes,key,name){
+function startRound(park,holes,key,name,opts){
+  Game.match=(opts&&opts.match)||null;   // set when the holes came frozen from a group match
   Game.challenge=null;Game.chDone=false;const _cc=$('#chChip');if(_cc)_cc.hidden=true;
   Object.assign(Game,{on:true,park,holes,idx:0,scores:[],strokes:0,courseKey:key,courseName:name,discIdx:0});
   Game.tourney=null;$('#hudPos').textContent='';if(App.mode==='tournament')initTourney();
@@ -2522,7 +2566,14 @@ function syncShape(){$('#shapeVal').textContent=shapeLabel(Game.bend);}
 $('#bend').addEventListener('input',e=>{Game.bend=+e.target.value/100;Game.previewDirty=true;syncShape();});
 $('#shapeChip').addEventListener('click',()=>{const open=$('#bendRow').hidden;closePanels();setPanel('#bendRow','#shapeChip',open);});
 $('#discChip').addEventListener('click',()=>{const open=$('#discs').hidden;closePanels();setPanel('#discs','#discChip',open);});
-function toast(a,b){const t=$('#toast');t.innerHTML=a+(b?`<small>${b}</small>`:'');t.classList.add('on');}
+// Text only, never markup: usernames, group names and server error messages all come through here,
+// and a sibling can name a group anything they like. Off the game screen the toast hides itself —
+// in a round the round's own flow hides it at the next lie.
+let toastTimer=0;
+function toast(a,b){const t=$('#toast');t.textContent='';t.append(document.createTextNode(String(a==null?'':a)));
+  if(b){const sm=document.createElement('small');sm.textContent=String(b);t.appendChild(sm);}
+  t.classList.add('on');clearTimeout(toastTimer);
+  if(App.screen!=='game')toastTimer=setTimeout(hideToast,2600);}
 function hideToast(){$('#toast').classList.remove('on');}
 function resetStats(){$('#stPower').textContent='–';$('#stTempo').textContent='–';$('#stLine').textContent='–';$('#swingHint').textContent='Hold for power, flick forward to throw';}
 
@@ -2685,6 +2736,7 @@ function nextLie(){
   }
   if(g.challenge)updateChChip();
   if(g.pending&&g.pending.holed){g.scores.push(g.strokes);
+    if(g.match)netPostScore(g.match.id,g.holes[g.idx].n,g.strokes,g.holes[g.idx].par);
     if(g.tourney){simHoleForPros();updatePosChip();showLeaderboard(true);return;}
     if(g.idx+1<g.holes.length)loadHole(g.idx+1);else finishRound();return;}
   g.aim=aimToBasket();g.phase='aim';g.av.position.set(g.player.x,g.player.y,g.player.z);g.av.userData.baseY=g.player.y;placeCameraBehind(true);updateHud();resetStats();g.previewPower=0.85;g.previewDirty=true;checkTapIn();
@@ -2697,7 +2749,11 @@ function finishRound(){
   h+='<tr><th>Par</th>'+g.holes.map(x=>`<td>${x.par}</td>`).join('')+`<td>${g.holes.reduce((a,x)=>a+x.par,0)}</td></tr>`;
   h+='<tr><th>You</th>'+g.scores.map((s,i)=>{const d=s-g.holes[i].par;return `<td class="${d<0?'u':d>0?'o':'e'}">${s}</td>`;}).join('')+`<td>${g.scores.reduce((a,b)=>a+b,0)}</td></tr>`;
   $('#scTable').innerHTML=h;
-  if(g.tourney){const st=tourneyStandingsHtml();$('#scStand').innerHTML=st.html;$('#scStandWrap').hidden=false;$('#scTitle').textContent=`${posLabel(st.me)} place · ${fmtScore(total)}`;$('#scParkName').textContent=g.courseName+' Open';}else{$('#scStandWrap').hidden=true;}
+  if(g.tourney){const st=tourneyStandingsHtml();$('#scStandLbl').textContent='Final standings';$('#scStand').innerHTML=st.html;$('#scStandWrap').hidden=false;$('#scTitle').textContent=`${posLabel(st.me)} place · ${fmtScore(total)}`;$('#scParkName').textContent=g.courseName+' Open';}
+  else if(g.match){ // the group board, once the last hole has had a moment to post
+    $('#scStandLbl').textContent='Group leaderboard';$('#scStand').innerHTML='<tr><td class="fine">Loading…</td></tr>';$('#scStandWrap').hidden=false;
+    netFlush().then(()=>netBoard(g.match.id)).then(rows=>{$('#scStand').innerHTML=boardHtml(rows);}).catch(()=>{$('#scStand').innerHTML='<tr><td class="fine">Could not load the leaderboard — your scores are saved and will post when you are back online.</td></tr>';});
+  }else{$('#scStandWrap').hidden=true;}
   $('#scoreOverlay').classList.add('on');g.phase='done';
 }
 // ---------- meter (ring) ----------
@@ -3228,6 +3284,7 @@ function renderChallenges(){
 function startChallenge(c){
   const park=PARKS.find(p=>p.id===c.park);if(!park)return;
   if(!ownsCourse(park.id)){openShop(park);return;}
+  Game.match=null;   // a challenge never posts to a match; this path does not go through startRound
   const hole=challengeHole(park,c.shape,c.seed,{len:c.len,water:!!c.water});
   hole.n=1;hole.loc=c.name;
   App.mode='casual';
@@ -3420,6 +3477,181 @@ const Designer={tool:'tree',holes:[],idx:0,parkId:'smokies',brush:1,cv:null,ctx:
     c.fillText(`HOLE ${d.idx+1} · ${ft} FT · PAR ${h.par} · ${h.objs.length} OBJECTS`,10*R,20*R);
   }
 };
+
+// ---------- accounts and playing together ----------
+// No email, no password. A player is a Supabase anonymous user who has claimed a username; the
+// session token lives in localStorage so a child never types a credential twice. Players find each
+// other with a six-character group code. Everything is async and nothing here ever blocks a throw:
+// a score that fails to post is queued and retried, a leaderboard that fails to load says so.
+//
+// There is no client library. The whole surface is four HTTP calls — anonymous sign-up, token
+// refresh, an RPC, and one filtered SELECT — and supabase-js would be the first dependency in a
+// single-file build that has none. The key below is the publishable key: public by design, and
+// compiled into the shipped file on purpose. Row-level security is what protects the data.
+const NET={url:'https://nllnuysfcedgksmqndia.supabase.co',key:'sb_publishable_fIE_TuGmODdjYFgEt9V-Ww_ZesmeRh_'};
+const Net={auth:store('pdg.auth')||null,profile:store('pdg.profile')||null,groups:store('pdg.groups')||[],
+  pending:store('pdg.pending')||[],group:null,matches:[],busy:false,flushing:null};
+function netSave(){store('pdg.auth',Net.auth);store('pdg.profile',Net.profile);store('pdg.groups',Net.groups);store('pdg.pending',Net.pending);}
+function netOn(){return !!(Net.auth&&Net.auth.access_token);}
+// Every response is parsed the same way: PostgREST and GoTrue both put the human message in one of
+// a few fields, and a 204 has no body at all.
+async function netRead(res){
+  const txt=await res.text();let j=null;try{j=txt?JSON.parse(txt):null;}catch(e){}
+  if(!res.ok){const m=(j&&(j.message||j.msg||j.error_description||j.error))||('HTTP '+res.status);
+    const err=new Error(m);err.status=res.status;err.code=j&&(j.code||j.error_code);throw err;}
+  return j;
+}
+async function netAuthCall(path,body){
+  const res=await fetch(NET.url+'/auth/v1/'+path,{method:'POST',headers:{apikey:NET.key,'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+  const j=await netRead(res);
+  Net.auth={access_token:j.access_token,refresh_token:j.refresh_token,expires_at:Date.now()+(j.expires_in||3600)*1000,uid:j.user&&j.user.id};
+  netSave();return Net.auth;
+}
+async function netSignIn(){
+  try{return await netAuthCall('signup',{});}
+  catch(e){if(e.code==='anonymous_provider_disabled'||/anonymous/i.test(e.message))throw new Error('Anonymous sign-ins are switched off in Supabase');throw e;}
+}
+async function netToken(){
+  if(!Net.auth)return null;
+  if(Date.now()>Net.auth.expires_at-60000)await netAuthCall('token?grant_type=refresh_token',{refresh_token:Net.auth.refresh_token});
+  return Net.auth.access_token;
+}
+async function netApi(method,path,body){
+  const tok=await netToken();if(!tok)throw new Error('Not connected');
+  const h={apikey:NET.key,Authorization:'Bearer '+tok,'Content-Type':'application/json'};
+  let res=await fetch(NET.url+'/rest/v1/'+path,{method,headers:h,body:body===undefined?undefined:JSON.stringify(body)});
+  if(res.status===401&&Net.auth.refresh_token){ // a token that expired between the check and the call
+    await netAuthCall('token?grant_type=refresh_token',{refresh_token:Net.auth.refresh_token});
+    h.Authorization='Bearer '+Net.auth.access_token;
+    res=await fetch(NET.url+'/rest/v1/'+path,{method,headers:h,body:body===undefined?undefined:JSON.stringify(body)});}
+  return netRead(res);
+}
+const rpc=(fn,args)=>netApi('POST','rpc/'+fn,args||{});
+
+// ---- what the screen calls ----
+async function netConnect(username){
+  if(!netOn())await netSignIn();
+  Net.profile=await rpc('ensure_profile',{p_username:username});
+  netSave();await netLoadGroups();return Net.profile;
+}
+async function netLoadGroups(){Net.groups=await rpc('my_groups')||[];netSave();return Net.groups;}
+async function netCreateGroup(name){const g=await rpc('create_group',{p_name:name});await netLoadGroups();return g;}
+async function netJoinGroup(code){const g=await rpc('join_group',{p_code:code});await netLoadGroups();return g;}
+async function netOpenMatches(groupId){
+  Net.matches=await netApi('GET',`matches?select=id,course_name,park_id,holes,status,created_at,created_by&group_id=eq.${groupId}&status=eq.open&order=created_at.desc`)||[];
+  return Net.matches;}
+// The layout is frozen into the match the moment it is created: everyone who joins throws exactly
+// these holes, whatever a later build's generator would deal.
+async function netCreateMatch(groupId,park,holes,name){
+  return rpc('create_match',{p_group:groupId,p_course_name:name,p_park_id:park.id,p_holes:holes});}
+async function netBoard(matchId){return await rpc('match_board',{p_match:matchId})||[];}
+// Posting a hole is fire-and-forget from the game's point of view. The server ignores a repeat of
+// the same hole, so a retry can never double-count, and a failure simply waits for the next try.
+function netPostScore(matchId,hole,strokes,par){
+  const item={p_match:matchId,p_hole:hole,p_strokes:strokes,p_par:par};
+  Net.pending.push(item);netSave();
+  return netFlush();
+}
+// One flush at a time; a second caller gets the first one's promise rather than a `false`, so a
+// scorecard that asks for the board right after the last hole posted waits for that post. A reply
+// the server *gave* (a closed match, not a member) means the item can never succeed: it is dropped
+// and the queue moves on. Only a failure to reach the server at all keeps the item for next time.
+async function netFlush(){
+  if(Net.busy)return Net.flushing;
+  if(!Net.pending.length||!netOn())return false;
+  Net.busy=true;
+  Net.flushing=(async()=>{
+    try{
+      while(Net.pending.length){
+        try{await rpc('post_score',Net.pending[0]);}
+        catch(e){if(e&&e.status&&e.status!==401){Net.pending.shift();netSave();continue;}return false;}
+        Net.pending.shift();netSave();
+      }
+      return true;
+    }finally{Net.busy=false;Net.flushing=null;}
+  })();
+  return Net.flushing;
+}
+function netDisconnect(){Net.auth=null;Net.profile=null;Net.groups=[];Net.group=null;Net.matches=[];netSave();}
+
+// ---- the screen ----
+function famPane(which){for(const id of ['famConnect','famHome','famGroup'])$('#'+id).hidden=(id!==which);}
+function famErr(e){toast('Could not do that',(e&&e.message)||'');}
+function famRender(){
+  if(!Net.profile){famPane('famConnect');return;}
+  if(Net.group){famRenderGroup();return;}
+  famPane('famHome');$('#famWho').textContent=Net.profile.username;
+  const list=$('#famGroups');list.innerHTML='';
+  if(!Net.groups.length)list.innerHTML='<p class="fine">No groups yet. Make one and read the code to the others, or type a code you were given.</p>';
+  for(const g of Net.groups){
+    const b=document.createElement('button');b.className='park fam';
+    b.innerHTML=`<div class="sw" style="background:linear-gradient(#5f95d6,#9bb7cf)"></div><div><h3>${famEsc(g.name)}</h3><div class="meta">Tap to see matches</div></div><div class="code">${famEsc(g.code)}</div>`;
+    b.addEventListener('click',()=>{Net.group=g;famRenderGroup();});list.appendChild(b);}
+}
+function famEsc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function famRenderGroup(){
+  const g=Net.group;famPane('famGroup');
+  $('#famGroupName').textContent=g.name;$('#famGroupCode').textContent=g.code;
+  // courses you can start a match on: every park you own, plus anything built in the designer
+  const sel=$('#famCourse');sel.innerHTML='';
+  PARKS.filter(p=>ownsCourse(p.id)).forEach(p=>{const o=document.createElement('option');o.value='park:'+p.id;o.textContent=p.name;sel.appendChild(o);});
+  App.courses.forEach((c,i)=>{const o=document.createElement('option');o.value='custom:'+i;o.textContent=c.name+' (yours)';sel.appendChild(o);});
+  const list=$('#famMatches');list.innerHTML='<p class="fine">Loading…</p>';
+  netOpenMatches(g.id).then(ms=>{
+    list.innerHTML=ms.length?'':'<p class="fine">No open matches. Start one and everyone in the group can play it.</p>';
+    for(const m of ms){
+      const card=document.createElement('div');card.className='park fam static';
+      const pk=PARKS.find(p=>p.id===m.park_id)||PARKS[0];
+      card.innerHTML=`<div class="sw" style="background:linear-gradient(${pk.sky[0]},${pk.sky[1]})"><i style="background:${pk.ground.fair}"></i></div><div><h3>${famEsc(m.course_name)}</h3><div class="meta">${m.holes.length} holes · ${famAgo(m.created_at)}</div></div><div class="row" style="gap:6px"><button class="btn small" data-play="${m.id}">Play</button><button class="btn secondary small" data-board="${m.id}">Board</button></div>`;
+      card.querySelector('[data-play]').addEventListener('click',()=>startMatch(m));
+      card.querySelector('[data-board]').addEventListener('click',()=>famShowBoard(m));
+      list.appendChild(card);}
+  }).catch(e=>{list.innerHTML='<p class="fine">Could not load matches.</p>';famErr(e);});
+}
+function famAgo(iso){const s=(Date.now()-new Date(iso).getTime())/1000;return s<3600?Math.max(1,Math.round(s/60))+' min ago':s<86400?Math.round(s/3600)+' h ago':Math.round(s/86400)+' d ago';}
+function boardHtml(rows){
+  if(!rows.length)return '<tr><td class="fine">Nobody has posted a hole yet.</td></tr>';
+  let h='<tr><th>#</th><th>Player</th><th>Holes</th><th>Score</th></tr>';
+  rows.forEach((r,i)=>{const me=Net.profile&&r.profile_id===Net.profile.id;
+    h+=`<tr${me?' class="me"':''}><td>${i+1}</td><td>${famEsc(r.username)}</td><td>${r.holes_done}</td><td>${fmtScore(r.to_par)}</td></tr>`;});
+  return h;
+}
+function famShowBoard(m){
+  $('#boardTitle').textContent=m.course_name;$('#boardTable').innerHTML='<tr><td class="fine">Loading…</td></tr>';$('#boardOverlay').classList.add('on');
+  netBoard(m.id).then(rows=>{$('#boardTable').innerHTML=boardHtml(rows);}).catch(e=>{$('#boardTable').innerHTML='<tr><td class="fine">Could not load.</td></tr>';famErr(e);});
+}
+// A match is played on the holes frozen into it, never re-dealt. `n` is restored because the
+// server copy came through JSON and the game numbers holes from it.
+function startMatch(m){
+  const pk=PARKS.find(p=>p.id===m.park_id)||PARKS[0];
+  if(!ownsCourse(pk.id)){openShop(pk);return;}
+  $('#boardOverlay').classList.remove('on');
+  startRound(pk,m.holes.map((h,i)=>({...h,n:i+1})),'match:'+m.id,m.course_name,{match:m});
+}
+async function famStartMatch(){
+  const v=$('#famCourse').value;if(!v||!Net.group)return;
+  let park,holes,name;
+  if(v.startsWith('park:')){park=PARKS.find(p=>p.id===v.slice(5));holes=generateCourse(park);name=park.name;}
+  else{const c=App.courses[+v.slice(7)];if(!c)return;park=PARKS.find(p=>p.id===c.parkId)||PARKS[0];holes=c.holes;name=c.name;}
+  const b=$('#famStart');b.disabled=true;
+  try{await netCreateMatch(Net.group.id,park,holes,name);toast('Match started',name+' · everyone in '+Net.group.name+' can play it');famRenderGroup();}
+  catch(e){famErr(e);}finally{b.disabled=false;}
+}
+$('#btnFamily').addEventListener('click',()=>{Net.group=null;famRender();show('family');});
+$('#famGo').addEventListener('click',async()=>{
+  const name=$('#famName').value.trim();if(name.length<2){toast('Pick a name','Two to sixteen letters or numbers');return;}
+  const b=$('#famGo');b.disabled=true;b.textContent='Connecting…';
+  try{await netConnect(name);famRender();toast('Connected','Playing as '+Net.profile.username);}
+  catch(e){famErr(e);}finally{b.disabled=false;b.textContent='Connect';}
+});
+$('#famCreate').addEventListener('click',async()=>{const n=$('#famGroupNew').value.trim()||'Family';try{const g=await netCreateGroup(n);$('#famGroupNew').value='';famRender();toast('Group made','Code '+g.code+' — read it to the others');}catch(e){famErr(e);}});
+$('#famJoin').addEventListener('click',async()=>{const c=$('#famCode').value.trim();if(c.length!==6){toast('Codes are six characters','');return;}try{const g=await netJoinGroup(c);$('#famCode').value='';famRender();toast('Joined',g.name);}catch(e){famErr(e);}});
+$('#famBack').addEventListener('click',()=>{Net.group=null;famRender();});
+$('#famStart').addEventListener('click',famStartMatch);
+$('#famOut').addEventListener('click',()=>{netDisconnect();famRender();});
+$('#boardClose').addEventListener('click',()=>$('#boardOverlay').classList.remove('on'));
+// anything queued from a round that lost its connection goes up as soon as the app is back
+if(netOn()&&Net.pending.length)netFlush();
 
 // keep game state across live republishes
 try{if(window.claude&&window.claude.hot){window.claude.hot.snapshot(()=>({screen:App.screen,avatar:App.avatar}));}}catch(e){}
