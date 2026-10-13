@@ -38,6 +38,7 @@ h3{font-size:19px;font-weight:600}
 #title .brand small{display:block;font-family:var(--display);font-size:18px;letter-spacing:.18em;color:var(--accent2);font-weight:600;text-transform:uppercase;margin-bottom:4px}
 #title .btn{width:100%}
 .fine{font-size:12px;color:var(--muted)}
+.textbtn{background:none;border:0;padding:4px 0;font:inherit;font-size:12px;color:var(--muted);text-decoration:underline;cursor:pointer;align-self:flex-start}
 /* park select */
 #parks,#designer,#challenges{gap:12px;overflow:hidden;background:var(--ink)}
 .screen{overflow:hidden}
@@ -499,6 +500,12 @@ select{font:inherit;font-family:var(--display);font-weight:600;letter-spacing:.0
     <button class="btn" id="shopBuy">Unlock</button>
     <button class="btn secondary" id="shopClose">Not now</button>
     <div class="fine" id="shopNote" style="opacity:.7"></div>
+    <div class="fine" id="shopTester" hidden>Tester access: everything unlocked</div>
+    <button class="textbtn" id="shopCodeLink" hidden>Have a code?</button>
+    <div class="fam stack" id="shopCode" hidden style="gap:8px">
+      <input id="shopCodeIn" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Tester code" aria-label="Tester code">
+      <button class="btn secondary small" id="shopRedeem">Redeem</button>
+    </div>
   </div></div>
 
 
@@ -1885,14 +1892,15 @@ const KITS={
   storm:{shirt:'#3d5a6b',short:'#2a333b',sock:'#8a949c',shoe:'#22282e',skin:'#c68a5e',hair:'#2f2419'},
 };
 // locker: what the player is wearing and what is coming to the store. The four kits with a KITS entry are
-// real colour sets the figure wears; the last two are accessories still to be built.
+// real colour sets the figure wears; the last two are accessories still to be built. Prices live in
+// PRICES (06-game.js) with the course price; whether an entry is owned is `ownsItem` there.
 const LOCKER=[
   {id:'pro',name:'Tour Kit',sub:'White tech tee · black shorts',owned:true},
-  {id:'park',name:'Ranger Green',sub:'Park-service throwback',price:'$1.99'},
-  {id:'retro',name:'1979 Retro',sub:'Striped tee · tube socks',price:'$1.99'},
-  {id:'storm',name:'Storm Shell',sub:'Rain kit with hood',price:'$2.99'},
-  {id:'pets',name:'Trail Dog',sub:'Follows you down the fairway',price:'$3.99'},
-  {id:'bag',name:'Leather Bag',sub:'Carries the disc set',price:'$2.99'},
+  {id:'park',name:'Ranger Green',sub:'Park-service throwback'},
+  {id:'retro',name:'1979 Retro',sub:'Striped tee · tube socks'},
+  {id:'storm',name:'Storm Shell',sub:'Rain kit with hood'},
+  {id:'pets',name:'Trail Dog',sub:'Follows you down the fairway'},
+  {id:'bag',name:'Leather Bag',sub:'Carries the disc set'},
 ];
 function defaultAvatar(){
   return {name:'You',kit:'pro',skin:2,hair:0,hairStyle:'short',build:'athletic',height:0.5,hand:1};}
@@ -2273,8 +2281,15 @@ const App={screen:'title',avatar:normAvatar(store('pdg.avatar')),best:store('pdg
 // store to take the money, so `unlockCourse` below grants it outright. When the accounts work lands,
 // that one function is the only thing that has to change — the gate, the card, the sheet and the
 // persisted list all stay as they are.
-const PRICES={magnolia:'$4.99'};
-function ownsCourse(id){const p=PARKS.find(x=>x.id===id);return !p||!p.paid||App.owned.indexOf(id)>=0;}
+// One price table for everything sold: the paid course and the locker's kits and accessories.
+const PRICES={magnolia:'$4.99',park:'$1.99',retro:'$1.99',storm:'$2.99',pets:'$3.99',bag:'$2.99'};
+// "Everything in the pro shop" for a tester is this one flag on the signed-in profile. It is set by
+// the server when a tester code tied to the username is redeemed, arrives with the profile, and is
+// never written into the local ownership list — so it follows the account across devices and goes
+// away with it. Every ownership read (courses, kits, accessories) goes through here.
+function allAccess(){return !!(typeof Net!=='undefined'&&Net.profile&&Net.profile.all_access);}
+function ownsCourse(id){const p=PARKS.find(x=>x.id===id);return !p||!p.paid||allAccess()||App.owned.indexOf(id)>=0;}
+function ownsItem(it){return !!it.owned||allAccess()||App.owned.indexOf(it.id)>=0;}
 function unlockCourse(id){
   if(App.owned.indexOf(id)<0){App.owned.push(id);store('pdg.owned',App.owned);}
 }
@@ -2357,11 +2372,13 @@ function renderCharControls(){
   const el=$('#locker');if(!el)return;el.innerHTML='';
   LOCKER.forEach(it=>{
     const b=document.createElement('button');
-    b.className='kit'+(it.owned?' on':'');
+    const owned=ownsItem(it);
+    b.className='kit'+(owned?' on':'');
     b.innerHTML='<span class="kitname">'+it.name+'</span><span class="kitsub">'+it.sub+'</span>'+
-      '<span class="kittag">'+(it.owned?'Owned':it.price)+'</span>';
+      '<span class="kittag">'+(owned?'Owned':(PRICES[it.id]||''))+'</span>';
     b.addEventListener('click',()=>{
-      if(!it.owned){toast('Coming soon',it.name+' unlocks when the Pro Shop opens');return;}
+      if(!owned){toast('Coming soon',it.name+' unlocks when the Pro Shop opens');return;}
+      if(!KITS[it.id]){toast('Coming soon',it.name+' is still being built');return;}   // an accessory a tester owns but cannot wear yet
       if(KITS[it.id]){App.avatar.kit=it.id;rebuildCharAvatar();renderCharControls();}});
     el.appendChild(b);});
 }
@@ -2397,9 +2414,10 @@ function renderParkList(){
     const best=App.best[it.park?p.id:'custom:'+it.custom.name];
     const name=it.park?p.name:it.custom.name;let meta=it.park?`${p.state} · est. ${p.est} · ${p.tag}`:`Custom · ${it.custom.holes.length} hole${it.custom.holes.length>1?'s':''} · ${p.name} terrain`;if(App.mode==='tournament')meta=`${name} Open · ${it.park?9:it.custom.holes.length} holes · you vs ${PROS.length} pros`;
     if(locked)b.classList.add('locked');
+    // A tester sees the paid course open, and the badge says why — so the owner can tell the code took.
     const tail=locked
       ? `<div class="price">${PRICES[p.id]||''}<small>LOCKED</small></div>`
-      : `<div class="best">${best!==undefined?fmtScore(best):'–'}<small>best</small></div>`;
+      : `<div class="best">${best!==undefined?fmtScore(best):'–'}<small>${it.park&&p.paid&&allAccess()?'tester · unlocked':'best'}</small></div>`;
     b.innerHTML=`<div class="sw" style="background:linear-gradient(${p.sky[0]},${p.sky[1]})"><b style="background:${p.cliff?p.cliff.color:p.ridge[0]}"></b><i style="background:${p.ground.fair}"></i></div><div><h3>${name}</h3><div class="meta">${meta}</div></div>${tail}`;
     b.addEventListener('click',()=>{
       if(locked){openShop(p);return;}
@@ -2417,6 +2435,8 @@ function openShop(park){
   $('#shopWhat').textContent=`Nine holes · four challenges · ${park.tag}`;
   $('#shopBuy').textContent=`Unlock · ${PRICES[park.id]||''}`;
   $('#shopNote').textContent='Testing build: this unlocks the course on this device and charges nothing.';
+  renderShopCode(false);
+  $('#shopBuy').hidden=allAccess();   // a tester already has it; nothing to offer
   $('#shopOverlay').classList.add('on');
 }
 function closeShop(){shopFor=null;$('#shopOverlay').classList.remove('on');}
@@ -2425,6 +2445,32 @@ $('#shopBuy').addEventListener('click',()=>{
   const p=shopFor;if(!p)return;
   unlockCourse(p.id);closeShop();renderParkList();
   toast(p.name+' unlocked','Nine new holes');
+});
+// The tester door. A quiet "Have a code?" at the foot of the sheet, no price, no offer, nothing on
+// the title screen. The code is checked on the server against the signed-in username; the client
+// only ever learns "yes" (the profile now carries all_access) or a sentence to show.
+function renderShopCode(open){
+  const on=allAccess();
+  $('#shopTester').hidden=!on;
+  $('#shopCodeLink').hidden=on||open;
+  $('#shopCode').hidden=on||!open;
+  if(open)$('#shopCodeIn').focus();
+}
+$('#shopCodeLink').addEventListener('click',()=>renderShopCode(true));
+$('#shopCodeIn').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('#shopRedeem').click();}});   // the keyboard's Go key
+$('#shopRedeem').addEventListener('click',async()=>{
+  const b=$('#shopRedeem'),code=$('#shopCodeIn').value.trim();
+  if(!code){toast('Type the code first','');return;}
+  const was=b.textContent;b.disabled=true;b.textContent='Checking…';
+  try{
+    await netRedeem(code);
+    $('#shopCodeIn').value='';closeShop();
+    if(App.screen==='parks')renderParkList();
+    if(App.screen==='challenges')renderChallenges();
+    if(App.screen==='character')renderCharControls();
+    toast('Tester access','Everything unlocked');
+  }catch(e){toast('Could not do that',(e&&e.message)||'');}
+  finally{b.disabled=false;b.textContent=was;}
 });
 
 // ---------- audio ----------
@@ -3624,7 +3670,7 @@ async function netMfaVerify(code){
 }
 // Loads (or claims) the profile and pulls the player's history down. Called after any sign-in.
 async function netAfterSignIn(username){
-  const rows=await netApi('GET','profiles?select=id,username,avatar&id=eq.'+Net.auth.uid);
+  const rows=await netApi('GET','profiles?select=id,username,avatar,all_access&id=eq.'+Net.auth.uid);
   if(rows&&rows.length){Net.profile=rows[0];Net.needName=false;}
   else if(username){Net.profile=await rpc('ensure_profile',{p_username:username});Net.needName=false;}
   else{Net.profile=null;Net.needName=true;netSave();return {needName:true};}
@@ -3635,6 +3681,14 @@ async function netAfterSignIn(username){
   return {ok:true};
 }
 async function netClaimName(username){Net.profile=await rpc('ensure_profile',{p_username:username});Net.needName=false;netSave();await netLoadGroups().catch(()=>{});if(Net.pending.length)netFlush();netSyncDown();return Net.profile;}
+// The tester's door: a code the server holds, bound to the first username that redeems it.
+async function netRedeem(code){
+  if(!accountReady())throw new Error('Not signed in');
+  if(!String(code||'').trim())throw new Error('Type the code first');
+  const r=await rpc('redeem_code',{p_code:String(code).trim()});
+  Net.profile.all_access=true;netSave();
+  return r||{grants:'all'};
+}
 async function netForgot(email){await netAuth('POST','recover',{email});}
 // An anonymous player from the earlier build keeps their name: the account is given an email and a
 // password in place rather than replaced.
@@ -3698,6 +3752,9 @@ async function netSyncDown(){
   if(!accountReady())return false;
   try{
     await netFlushOutbox();
+    // tester access is the server's to give and take: re-read it rather than trust the phone's copy
+    try{const rows=await netApi('GET','profiles?select=all_access&id=eq.'+Net.auth.uid);
+      if(rows&&rows[0]&&Net.profile){Net.profile.all_access=!!rows[0].all_access;netSave();}}catch(e){}
     let stats,stars;
     try{[stats,stars]=await Promise.all([rpc('my_stats'),rpc('my_stars')]);}
     catch(e){if(netIsMfaRefusal(e))netRequireMfa();throw e;}
