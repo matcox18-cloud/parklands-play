@@ -10,3 +10,6 @@ Open it from the filesystem and it runs, with no server and no network.
 
 This repository holds the published build only. The source lives in a separate private repository; drop a
 new `index.html` here to update the site.
+
+`.github/workflows/keepalive.yml` pings the game's Supabase project twice a week so the free plan does
+not pause it; the Actions tab shows whether the last ping answered.

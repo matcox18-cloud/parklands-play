@@ -1,0 +1,31 @@
+# Keep the game's Supabase project awake.
+#
+# A free-plan project pauses itself after seven days without traffic, and a paused project cannot
+# sign anyone in. Twice a week this calls a heartbeat function that reads nothing and returns the
+# server's clock. The key below is the project's publishable key: it is compiled into index.html
+# too, and row-level security is what protects the data.
+#
+# GitHub switches scheduled workflows off after 60 days with no commits to this repository; a
+# deploy is a commit, and the Actions tab shows a banner if it has happened.
+name: keepalive
+on:
+  schedule:
+    - cron: '17 9 * * 1,4'   # Monday and Thursday, 09:17 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: heartbeat
+        env:
+          URL: https://nllnuysfcedgksmqndia.supabase.co/rest/v1/rpc/keepalive
+          KEY: sb_publishable_fIE_TuGmODdjYFgEt9V-Ww_ZesmeRh_
+        run: |
+          code=$(curl -sS -o body.txt -w '%{http_code}' -X POST "$URL" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d '{}' || true)
+          echo "HTTP $code: $(cat body.txt)"
+          test "$code" = "200"
