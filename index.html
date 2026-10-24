@@ -111,6 +111,34 @@ select{font-family:var(--display);font-weight:600;letter-spacing:.04em;padding:8
 .park.fam{grid-template-columns:48px 1fr auto}
 .park.fam .sw{width:48px;height:48px}
 .park.static{cursor:default}
+/* course cards: a strip of the park's own landscape with the name set over it, the family badge as a corner
+   mark and the best score on the right. The scrim is the only thing standing between the type and the
+   picture, so it darkens the left and the foot and leaves the horizon alone. */
+.park.course{display:block;position:relative;height:138px;padding:0;overflow:hidden;border-color:rgba(255,255,255,.12);isolation:isolate}
+.park.course .hero{position:absolute;inset:0;width:100%;height:100%;display:block;transition:transform var(--slow) var(--ease)}
+.park.course:active .hero{transform:scale(1.03)}
+.park.course .scrim{position:absolute;inset:0;background:linear-gradient(90deg,rgba(9,20,14,.82) 0%,rgba(9,20,14,.6) 34%,rgba(9,20,14,.18) 66%,rgba(9,20,14,0) 100%),linear-gradient(180deg,rgba(9,20,14,0) 58%,rgba(9,20,14,.5) 100%)}
+.park.course .sw{position:absolute;top:8px;right:8px;width:34px;height:34px;border-radius:9px;box-shadow:0 1px 6px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.2)}
+.park.course .pk{position:absolute;left:14px;right:96px;bottom:11px;min-width:0}
+.park.course .pk .eyebrow{font-size:10px;letter-spacing:.14em;color:var(--paper2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.park.course h3{font-size:clamp(23px,7vw,30px);font-weight:800;line-height:.92;margin:3px 0 4px;color:var(--paper);text-shadow:0 2px 8px rgba(0,0,0,.55);text-wrap:balance}   /* a park's name is the headline: it wraps, it never clips */
+.park.course .meta{font-size:12.5px;line-height:1.2;color:var(--paper);opacity:.86;margin:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;text-shadow:0 1px 2px rgba(0,0,0,.7)}
+.park.course .best,.park.course .price{position:absolute;right:12px;bottom:12px;text-shadow:0 2px 6px rgba(0,0,0,.6)}
+.park.course .best small,.park.course .price small{color:var(--paper2)}
+.park.course .price small{color:var(--accent2)}
+.park.course .best{font-size:32px}
+/* the members' course: full colour, a gold hairline and the price; nothing greyed out, nothing to apologise for */
+.park.course.locked{border-color:rgba(242,194,48,.55);box-shadow:inset 0 0 0 1px rgba(242,194,48,.2)}
+.park.course.locked .sw{filter:none}
+.park.course.locked .sw::after{content:'';position:absolute;right:-5px;bottom:-5px;width:16px;height:16px;border-radius:50%;background:var(--accent2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='4' y='7' width='8' height='6' rx='1.2' fill='%230d1a13'/%3E%3Cpath d='M5.5 7V5.5a2.5 2.5 0 0 1 5 0V7' fill='none' stroke='%230d1a13' stroke-width='1.6'/%3E%3C/svg%3E") center/16px no-repeat;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.park.course.locked h3{color:var(--paper)}
+.park.course.locked .pk .eyebrow{color:var(--accent2)}
+/* a custom course: the same land on drafting paper, a dashed border, the designer's grid over the picture */
+.park.course.custom{border:1px dashed rgba(240,236,224,.45)}
+.park.course.custom .hero{filter:saturate(.55) contrast(.95)}
+.park.course.custom .scrim{background-image:linear-gradient(90deg,rgba(9,20,14,.82) 0%,rgba(9,20,14,.6) 34%,rgba(9,20,14,.18) 66%,rgba(9,20,14,0) 100%),linear-gradient(180deg,rgba(9,20,14,0) 58%,rgba(9,20,14,.5) 100%),repeating-linear-gradient(0deg,transparent 0 15px,rgba(240,236,224,.12) 15px 16px),repeating-linear-gradient(90deg,transparent 0 15px,rgba(240,236,224,.12) 15px 16px)}
+.park.course.custom .pk .eyebrow{color:var(--accent)}
+@media (prefers-reduced-motion:reduce){.park.course .hero{transition:none}.park.course:active .hero{transform:none}}
 .fam .code{font-family:var(--display);font-size:22px;font-weight:800;letter-spacing:.18em;color:var(--accent2)}
 .modes{margin-bottom:0}
 .diffs{margin-top:-4px}
@@ -190,10 +218,20 @@ select{font-family:var(--display);font-weight:600;letter-spacing:.04em;padding:8
 .discs .chip{justify-content:center;padding:0 6px;font-size:12px;gap:5px;letter-spacing:.04em}
 .discs .chip i{width:9px;height:9px}
 .shape{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:6px;pointer-events:auto}
-#discChip{grid-column:1/-1}
-#discChip,#shapeChip,#handChip{justify-content:center;min-width:0;padding:0 8px;font-size:13px;white-space:nowrap;overflow:hidden}
-#discChip b,#shapeChip b{font-weight:800}
-#discChip[aria-expanded="true"],#shapeChip[aria-expanded="true"]{border-color:var(--accent2);color:var(--accent2)}
+/* four stat tiles: a quiet label over a loud value, so "Shape · Anhyzer 45" and "Height · High" read at a glance */
+.shape .chip{flex-direction:column;justify-content:center;gap:2px;min-width:0;padding:4px 6px;min-height:44px;font-size:14px;line-height:1;white-space:nowrap;overflow:hidden;border-radius:14px}
+.shape .chip small{font-size:9px;letter-spacing:.14em;color:var(--muted);font-weight:600}
+.shape .chip b{font-weight:800;display:flex;align-items:center;gap:5px;max-width:100%;overflow:hidden}
+.shape .chip b i{width:9px;height:9px;flex:0 0 auto}
+.shape .chip.set b{color:var(--accent2)}
+.shape .chip[aria-expanded="true"]{border-color:var(--accent2)}
+.shape .chip[aria-expanded="true"] small{color:var(--accent2)}
+/* the height panel: three arcs you can read before you can read */
+.loft{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:6px;pointer-events:auto}
+.loft .chip{flex-direction:column;justify-content:center;gap:3px;padding:4px 2px;min-height:44px;min-width:0;font-size:11px;letter-spacing:.1em;border-radius:14px}
+.loft .chip svg{width:28px;height:14px;display:block;overflow:visible;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;transition:transform var(--fast) var(--ease)}
+.loft .chip:active svg{transform:translateY(-1px)}
+.loft .chip.on svg{stroke:var(--ink)}
 .bend{display:flex;align-items:center;gap:6px;pointer-events:auto;margin-bottom:6px;font-family:var(--display);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--paper2);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 10px;min-height:44px}
 .bend input{flex:1;accent-color:var(--accent2);margin:0;min-width:0}
 #swing{position:relative;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:0;padding:6px 6px 8px;border-radius:18px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:border-color var(--fast),box-shadow var(--slow)}
@@ -693,10 +731,16 @@ if(document.readyState!=='loading')off();else document.addEventListener('DOMCont
   <div class="bottom">
     <div class="discs" id="discs" hidden></div>
     <div class="bend" id="bendRow" hidden><span>Hyzer</span><input type="range" id="bend" min="-100" max="100" value="0" step="5" aria-label="Shot shape"><span>Anhyzer</span></div>
+    <div class="loft" id="loftRow" hidden role="group" aria-label="Throw height">
+      <button class="chip" data-loft="-1" title="Low: a line drive, flies longer"><svg viewBox="0 0 28 14" aria-hidden="true"><path d="M2 12 Q14 7 26 12"/></svg>Low</button>
+      <button class="chip on" data-loft="0" title="Flat: the normal throw"><svg viewBox="0 0 28 14" aria-hidden="true"><path d="M2 12 Q14 -1 26 12"/></svg>Flat</button>
+      <button class="chip" data-loft="1" title="High: a lob, shorter, clears a rise"><svg viewBox="0 0 28 14" aria-hidden="true"><path d="M5 12 Q14 -8 23 12"/></svg>High</button>
+    </div>
     <div class="shape">
-      <button class="chip" id="discChip" aria-expanded="false"><i id="discSw"></i><b id="discVal">Driver</b></button>
-      <button class="chip" id="handChip">Backhand</button>
-      <button class="chip" id="shapeChip" aria-expanded="false">Shape · <b id="shapeVal">Flat</b></button>
+      <button class="chip" id="discChip" aria-expanded="false"><small>Disc</small><b><i id="discSw"></i><span id="discVal">Driver</span></b></button>
+      <button class="chip" id="handChip"><small>Grip</small><b id="handVal">Backhand</b></button>
+      <button class="chip" id="shapeChip" aria-expanded="false"><small>Shape</small><b id="shapeVal">Flat</b></button>
+      <button class="chip" id="loftChip" aria-expanded="false"><small>Height</small><b id="loftVal">Flat</b></button>
     </div>
     <div id="swing">
       <canvas id="meter" width="256" height="256"></canvas>
@@ -3519,22 +3563,145 @@ function famBadge(p){
   const vars=`--mk-sky1:${p.sky[0]};--mk-sky2:${p.sky[1]};--mk-near:${near};--mk-far:${far};--mk-ground:${p.ground.fair};--mk-water:${water}`;
   return `<div class="sw" style="${vars}"><svg class="badge" viewBox="0 0 64 64" aria-hidden="true"><use href="#mk-fam-${parkFamily(p)}"/></svg></div>`;
 }
+// ---------- the park heroes ----------
+// Every course card carries a wide strip of its own landscape, drawn from the park's data and nothing
+// else: its sky and sun, its horizon (rolling ridges, granite walls, striped sandstone, a canyon rim,
+// snow peaks over a lake, the Pacific with sea stacks, a wall of pines), its water in its own kind, a
+// tree line in its own species and its own ground colours. Nine parks, nine different pictures, and
+// a tenth park would get its own without a line of art. Built once per park as an SVG string and
+// cached, so the list renders with no drawing work; same seed, same strip, every time.
+const HeroCache=new Map();
+function heroMix(a,b,t){return '#'+new THREE.Color(a).lerp(new THREE.Color(b),t).getHexString();}   // mixed as the eye sees it (sRGB), not in linear light
+// a horizon line: `jag` gives peaks (polyline), otherwise the points are smoothed into rolling hills
+function heroRidge(r,y,amp,x0,x1,n,jag){
+  const w=x1-x0,pts=[];for(let i=0;i<=n;i++)pts.push([x0+w*i/n,+(y-amp*(0.3+r()*0.7)).toFixed(1)]);
+  let d=`M${x0},140 L${pts[0][0]},${pts[0][1]}`;
+  if(jag)for(let i=1;i<pts.length;i++)d+=` L${pts[i][0].toFixed(0)},${pts[i][1]}`;
+  else for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i];d+=` Q${a[0].toFixed(0)},${a[1]} ${((a[0]+b[0])/2).toFixed(0)},${((+a[1]+ +b[1])/2).toFixed(1)}`;}
+  return d+` L${x1},140 Z`;
+}
+// one tree in the park's species: layered cones for pines, a cluster of crowns for hardwoods, a low
+// mound for juniper, a wind-bent flat top for cypress
+function heroTree(tp,x,y,h,col,trunk){
+  x=+x;y=+y;h=+h;const t=tp.type,w=h*(t==='juniper'?1.3:t==='cypress'?0.9:t==='pine'||t==='conifer'?0.42:0.7);
+  if(t==='pine'||t==='conifer')return `<path d="M${x},${y-h} L${x+w},${y-h*0.45} L${x+w*0.6},${y-h*0.45} L${x+w*1.1},${y-h*0.12} L${x+w*0.18},${y-h*0.12} L${x+w*0.18},${y} L${x-w*0.18},${y} L${x-w*0.18},${y-h*0.12} L${x-w*1.1},${y-h*0.12} L${x-w*0.6},${y-h*0.45} L${x-w},${y-h*0.45} Z" fill="${col}"/>`;
+  if(t==='juniper')return `<path d="M${x-w},${y} Q${x-w*0.9},${y-h*0.7} ${x-w*0.2},${y-h} Q${x+w*0.6},${y-h*1.05} ${x+w},${y} Z" fill="${col}"/>`;
+  if(t==='cypress')return `<path d="M${x-1.4},${y} L${x-1},${y-h*0.5} L${x+2},${y-h*0.7} L${x+2.6},${y-h*0.45} L${x+2.2},${y} Z" fill="${trunk}"/><path d="M${x-w*1.2},${y-h*0.55} Q${x-w*0.4},${y-h*1.15} ${x+w*1.3},${y-h*0.98} L${x+w*1.1},${y-h*0.5} Q${x+w*0.3},${y-h*0.28} ${x-w*0.3},${y-h*0.42} Z" fill="${col}"/>`;
+  return `<rect x="${x-1.2}" y="${y-h*0.5}" width="2.4" height="${h*0.5}" fill="${trunk}"/><circle cx="${x}" cy="${y-h*0.62}" r="${w*0.62}" fill="${col}"/><circle cx="${x-w*0.42}" cy="${y-h*0.48}" r="${w*0.42}" fill="${col}"/><circle cx="${x+w*0.42}" cy="${y-h*0.5}" r="${w*0.44}" fill="${col}"/>`;
+}
+const heroTreeRaw=heroTree;
+function heroTreeR(tp,x,y,h,col,trunk){return heroTreeRaw(tp,x,y,h,col,trunk).replace(/-?\d+\.\d{2,}/g,m=>(+m).toFixed(1));}
+function parkHero(p){
+  if(HeroCache.has(p.id))return HeroCache.get(p.id);
+  const r=mulberry(p.seed+77),W=400,H=120,HZ=64,GY=86,id='ph-'+p.id;const SK=(typeof SKYLINE!=='undefined'&&SKYLINE[p.id])||{};
+  const G=p.ground,water=p.water,haze=p.fog;let s='';
+  // sky: the park's own gradient, the fog colour at the horizon, the sun where its light actually comes from
+  s+=`<defs><linearGradient id="${id}-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${p.sky[0]}"/><stop offset=".5" stop-color="${p.sky[1]}"/><stop offset=".62" stop-color="${haze}"/></linearGradient>`+
+     `<radialGradient id="${id}-sun"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".3" stop-color="#fff" stop-opacity=".25"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>`;
+  s+=`<rect width="${W}" height="${H}" fill="url(#${id}-sky)"/>`;
+  const sx=W/2+Math.max(-1,Math.min(1,p.sun[0]/70))*140,sy=HZ-8-Math.min(34,p.sun[1]*0.36);
+  s+=`<circle cx="${sx.toFixed(0)}" cy="${sy.toFixed(0)}" r="64" fill="url(#${id}-sun)"/>`;
+  // ground spans: where the land stops for a canyon, a sea cliff, a lake shore
+  let gx0=-10,gx1=W+10;if(p.canyonEdge)gx1=214;if(p.seaEdge)gx1=246;if(SK.lake)gx1=262;   // the signature goes on the right, where the type is not
+  // the horizon
+  const ridge=p.ridge||[];
+  if(SK.wall){
+    // a wall of pines all the way round, serrated, in two depths of haze
+    const l1=heroMix(p.tree.leaf,haze,0.5),l2=heroMix(p.tree.leaf,haze,0.18);
+    s+=`<path d="${heroRidge(r,HZ-4,9,-10,W+10,46,true)}" fill="${l1}"/><path d="${heroRidge(r,HZ+4,10,-10,W+10,52,true)}" fill="${l2}"/>`;
+  }else if(SK.dunes||SK.noRidge){
+    // a dune coast has no mountains: low grass lines in the haze on the landward side
+    s+=`<path d="${heroRidge(r,HZ+1,5,-10,gx1+30,7,false)}" fill="${heroMix(G.rough,haze,0.66)}"/><path d="${heroRidge(r,HZ+6,7,-10,gx1+20,6,false)}" fill="${heroMix(G.rough,haze,0.42)}"/>`;
+  }else if(p.cliff&&!p.canyonEdge){
+    // walls: granite domes for a valley, striped sandstone for a river canyon, and the far ridge between
+    const c1=p.cliff.color,c2=p.cliff.color2,tall=p.cliff.h[1]>=200,top=tall?6:16;
+    if(ridge.length)s+=`<path d="${heroRidge(r,HZ+1,14,120,290,6,true)}" fill="${ridge[ridge.length-1]}"/>`;
+    s+=`<clipPath id="${id}-wall">`;
+    const L=`M-10,${HZ+8} L-10,${top+8} L44,${top} L96,${top+12} L124,${top+34} L152,${HZ+8} Z`;
+    const R=p.cliff.striped?`M244,${HZ+8} L264,${top+28} L298,${top+2} L354,${top} L410,${top+10} L410,${HZ+8} Z`:`M250,${HZ+8} C262,${top+24} 292,${top} 332,${top} C372,${top} 396,${top+18} 410,${HZ+8} Z`;
+    s+=`<path d="${L}"/><path d="${R}"/></clipPath>`;
+    s+=`<g clip-path="url(#${id}-wall)"><rect width="${W}" height="${H}" fill="${c1}"/><path d="M96,${top+12} L124,${top+34} L152,${HZ+8} L118,${HZ+8} Z" fill="${c2}" opacity=".75"/><path d="M332,${top} L410,${top+10} L410,${HZ+8} L360,${HZ+8} Z" fill="${c2}" opacity=".6"/>`;
+    if(p.cliff.striped)for(let y=top+10;y<HZ+6;y+=8)s+=`<rect x="-10" y="${y}" width="${W+20}" height="2.4" fill="${c2}" opacity=".4"/>`;
+    s+=`</g>`;
+  }else{
+    const n=ridge.length;
+    for(let i=n-1;i>=0;i--){
+      const t=n>1?i/(n-1):0,far=i===n-1;
+      const amp=SK.snow&&far?36:10+t*12,y=HZ+2-t*7;
+      const d=heroRidge(r,y,amp,-10,W+10,SK.snow&&far?16:7+i,!!SK.snow);
+      s+=`<path d="${d}" fill="${SK.snow&&far&&n>2?ridge[n-3]:ridge[i]}"/>`;
+      if(SK.snow&&far)s+=`<clipPath id="${id}-snow"><rect y="0" width="${W}" height="${(y-amp*0.52).toFixed(0)}"/></clipPath><path d="${d}" fill="#f3f6f9" clip-path="url(#${id}-snow)"/>`;
+    }
+  }
+  // water as a horizon: the Pacific down the left, a lake off the right
+  if(p.seaEdge&&water){
+    s+=`<rect x="${gx1-4}" y="${HZ+2}" width="${W-gx1+14}" height="${H}" fill="${water.color}"/>`;
+    for(let i=0;i<5;i++){const y=HZ+10+i*12,x=gx1+16+r()*60;s+=`<path d="M${x.toFixed(0)},${y} q10,-2 20,0 t20,0 t20,0" fill="none" stroke="#eef3f2" stroke-width="1.2" opacity=".55"/>`;}
+    [[290,HZ+16,7],[344,HZ+30,10],[384,HZ+12,5],[316,HZ+48,13]].forEach(([x,y,sz])=>{s+=`<ellipse cx="${x}" cy="${y+sz*0.3}" rx="${sz*1.5}" ry="${sz*0.4}" fill="#eef3f2" opacity=".5"/><path d="M${x-sz},${y+sz*0.3} L${x-sz*0.5},${y-sz} L${x+sz*0.2},${y-sz*0.8} L${x+sz},${y+sz*0.3} Z" fill="#3e3835"/>`;});
+    s+=`<path d="M${gx1},${GY-6} L${gx1-10},${GY-8} L${gx1-8},${H} L${gx1+2},${H} Z" fill="${G.bare}"/>`;   // the cliff face, sixty feet of it
+  }
+  if(SK.lake&&water){
+    s+=`<rect x="${gx1-40}" y="${HZ+2}" width="${W-gx1+60}" height="${H}" fill="${water.color}"/>`;
+    s+=`<path d="M${gx1-30},${H} L${gx1+22},${HZ+2} L${gx1+44},${HZ+2} L${gx1+4},${H} Z" fill="${G.sand||'#e4d9bc'}"/>`;
+    for(let i=0;i<4;i++){const y=HZ+10+i*10;s+=`<path d="M${gx1+40+i*18},${y} q8,-1.5 16,0 t16,0" fill="none" stroke="#eef3f2" stroke-width="1" opacity=".5"/>`;}
+    if(SK.pier)s+=`<rect x="310" y="${HZ+13}" width="86" height="2.2" fill="#3a3632"/><rect x="384" y="${HZ+7}" width="12" height="8" fill="#3a3632"/>`+[0,1,2,3,4,5].map(i=>`<rect x="${318+i*13}" y="${HZ+15}" width="1.4" height="4" fill="#3a3632"/>`).join('');
+    if(SK.lighthouse)s+=`<rect x="${gx1+10}" y="${HZ-14}" width="5" height="22" fill="#f3efe4"/><rect x="${gx1+9}" y="${HZ-17}" width="7" height="3.5" fill="#c93a2e"/><rect x="${gx1+2}" y="${HZ+1}" width="9" height="7" fill="#f3efe4"/>`;
+  }
+  // the canyon: the rim drops away on the right into stacked buttes
+  if(p.canyonEdge&&p.cliff){
+    const c1=p.cliff.color,c2=p.cliff.color2;
+    s+=`<path d="M${gx1-20},${H} L${gx1-20},${HZ+14} L236,${HZ+12} L250,${HZ-2} L270,${HZ-2} L280,${HZ+12} L332,${HZ+14} L346,${HZ+4} L372,${HZ+4} L384,${HZ+14} L410,${HZ+14} L410,${H} Z" fill="${ridge[1]||c2}"/>`;
+    s+=`<path d="M${gx1+10},${H} L${gx1+16},${HZ+26} L${gx1+30},${HZ+20} L300,${HZ+20} L312,${HZ+34} L342,${HZ+36} L352,${HZ+26} L376,${HZ+26} L410,${HZ+40} L410,${H} Z" fill="${c2}"/>`;
+    for(let y=HZ+24;y<H;y+=7)s+=`<rect x="${gx1+8}" y="${y}" width="${W-gx1}" height="2" fill="${c1}" opacity=".35"/>`;
+    s+=`<path d="M${gx1},${GY-10} L${gx1+14},${GY-6} L${gx1+10},${H} L${gx1-4},${H} Z" fill="${c1}"/>`;
+  }
+  // the ground: the rough behind, the fairway in front with a mown stripe across it
+  s+=`<path d="M${gx0},${GY-6} Q${(gx0+gx1)/2},${GY-14} ${gx1},${GY-5} L${gx1},${H} L${gx0},${H} Z" fill="${G.rough}"/>`;
+  s+=`<path d="M${gx0},${GY+4} Q${(gx0+gx1)/2},${GY-3} ${gx1},${GY+6} L${gx1},${H} L${gx0},${H} Z" fill="${G.fair}"/>`;
+  s+=`<path d="M${gx0+(gx1-gx0)*0.3},${H} L${gx0+(gx1-gx0)*0.52},${GY+2} L${gx0+(gx1-gx0)*0.62},${GY+2} L${gx0+(gx1-gx0)*0.48},${H} Z" fill="#fff" opacity=".07"/>`;
+  if(G.sand){for(let i=0;i<3;i++){const x=gx0+20+r()*(gx1-gx0-40),y=GY+14+r()*14;s+=`<ellipse cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" rx="${(8+r()*10).toFixed(0)}" ry="${(2.5+r()*2).toFixed(1)}" fill="${G.sand}"/>`;}}
+  // water on the ground: thermal pools with steam, a river or a creek winding through
+  if(water&&water.kind==='thermal'){
+    s+=`<path d="M300,${GY-2} C290,${HZ-12} 292,${HZ-36} 304,${HZ-54} C316,${HZ-36} 318,${HZ-12} 308,${GY-2} Z" fill="#fff" opacity=".92"/><path d="M286,${HZ-4} C284,${HZ-22} 292,${HZ-40} 304,${HZ-54}" fill="none" stroke="#fff" stroke-width="7" opacity=".4" stroke-linecap="round"/><path d="M322,${HZ-2} C326,${HZ-20} 318,${HZ-38} 304,${HZ-54}" fill="none" stroke="#fff" stroke-width="5" opacity=".3" stroke-linecap="round"/>`;
+    [[236,GY+20,22],[318,GY+10,30],[378,GY+22,18]].forEach(([x,y,rx],i)=>{s+=`<ellipse cx="${x}" cy="${y}" rx="${rx+4}" ry="${rx*0.26+1.6}" fill="${water.rim}"/><ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${rx*0.26}" fill="${i===1?'#f0a630':water.color}"/>`+(i===1?`<ellipse cx="${x}" cy="${y}" rx="${rx*0.62}" ry="${rx*0.15}" fill="${water.color}"/>`:'')+`<path d="M${x-6},${y-2} q3,-10 0,-18 M${x+5},${y-1} q-3,-8 2,-16" fill="none" stroke="#fff" stroke-width="2.2" opacity=".45" stroke-linecap="round"/>`;});
+  }else if(water&&(water.kind==='river'||water.kind==='creek')){
+    const wdt=water.kind==='river'?8:4.5;const d=`M${gx0},${GY+22} C${gx0+70},${GY+8} ${gx0+140},${GY+32} ${gx0+230},${GY+16} S${gx1-40},${GY+30} ${gx1},${GY+20}`;
+    s+=`<path d="${d}" fill="none" stroke="${water.rim}" stroke-width="${wdt+5}" opacity=".9"/><path d="${d}" fill="none" stroke="${water.color}" stroke-width="${wdt}"/>`;
+  }
+  // the tree line in the park's species: a hazed row behind, a full row in front; azaleas at the feet in Magnolia
+  const tp=p.tree,n=Math.round(tp.density*30),hAvg=(tp.h[0]+tp.h[1])/2;
+  const hp=Math.min(40,6+hAvg*(tp.type==='pine'||tp.type==='conifer'?1.15:0.95));
+  const back=[],front=[];
+  for(let i=0;i<n;i++){const x=gx0+6+Math.pow(r(),0.72)*(gx1-gx0-12);   /* leaning right, out from under the type */const h=hp*(0.7+r()*0.6);(i%2?back:front).push([x,h]);}
+  back.forEach(([x,h])=>{s+=heroTreeR(tp,Math.round(x),GY-3,h*0.78,heroMix(tp.leaf,haze,0.34),heroMix(tp.trunk,haze,0.3));});
+  front.sort((a,b)=>a[0]-b[0]).forEach(([x,h],i)=>{s+=heroTreeR(tp,Math.round(x),GY+6+(i%3)*3,h,i%2?tp.leaf2:tp.leaf,tp.trunk);});
+  if(p.bloom)for(let i=0;i<16;i++){const x=gx0+10+r()*(gx1-gx0-20),y=GY+8+r()*10;s+=`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${(1.6+r()*1.4).toFixed(1)}" fill="${p.bloom}"/>`;}
+  const svg=`<svg class="hero" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax slice" aria-hidden="true">${s}</svg>`;
+  HeroCache.set(p.id,svg);return svg;
+}
+// one line of the blurb for the card: the first clause long enough to say something
+function parkLine(p){const b=p.blurb||'';const m=b.slice(18).search(/[,.;]/);return m<0?b:b.slice(0,18+m);}
 function renderParkList(){
   const list=$('#parkList');list.innerHTML='';
   const items=PARKS.map(p=>({park:p}));
   App.courses.forEach((c,i)=>items.push({custom:c,i}));
   items.forEach(it=>{
-    const b=document.createElement('button');b.className='park';
+    const b=document.createElement('button');b.className='park course';
     const p=it.park||PARKS.find(x=>x.id===it.custom.parkId)||PARKS[0];
     const locked=!!(it.park&&p.paid&&!ownsCourse(p.id));
     const best=App.best[it.park?p.id:'custom:'+it.custom.name];
-    const name=it.park?p.name:it.custom.name;let meta=it.park?`${p.state} · est. ${p.est} · ${p.tag}`:`Custom · ${it.custom.holes.length} hole${it.custom.holes.length>1?'s':''} · ${p.name} terrain`;if(App.mode==='tournament')meta=`${name} Open · ${it.park?9:it.custom.holes.length} holes · you vs ${PROS.length} pros`;
-    if(locked)b.classList.add('locked');
+    const name=it.park?p.name:famEsc(it.custom.name);
+    const nh=it.park?9:it.custom.holes.length;
+    let eyebrow=it.park?`${p.state} · est. ${p.est} · ${p.tag}`:`Your design · ${nh} hole${nh>1?'s':''} · ${p.name} terrain`;
+    let meta=it.park?parkLine(p):'Built in the course designer';
+    if(App.mode==='tournament')meta=`${name} Open · ${nh} holes · you vs ${PROS.length} pros`;
+    if(locked){b.classList.add('locked');eyebrow+=' · Locked';}
+    if(!it.park)b.classList.add('custom');
     // A tester sees the paid course open, and the badge says why — so the owner can tell the code took.
     const tail=locked
       ? `<div class="price">${PRICES[p.id]||''}<small>LOCKED</small></div>`
       : `<div class="best">${best!==undefined?fmtScore(best):'–'}<small>${it.park&&p.paid&&allAccess()?'tester · unlocked':'best'}</small></div>`;
-    b.innerHTML=`${famBadge(p)}<div><h3>${name}</h3><div class="meta">${meta}</div></div>${tail}`;
+    b.innerHTML=`${parkHero(p)}<div class="scrim"></div>${famBadge(p)}<div class="pk"><div class="eyebrow">${eyebrow}</div><h3>${name}</h3><div class="meta">${meta}</div></div>${tail}`;
     b.addEventListener('click',()=>{
       if(locked){openShop(p);return;}
       if(it.park)startRound(p,generateCourse(p),p.id,p.name);else startRound(p,it.custom.holes.map((h,i)=>({...h,n:i+1})),'custom:'+it.custom.name,it.custom.name);});
@@ -3679,7 +3846,7 @@ function startRound(park,holes,key,name,opts){
   Game.match=(opts&&opts.match)||null;   // set when the holes came frozen from a group match
   Game.challenge=null;Game.chDone=false;const _cc=$('#chChip');if(_cc)_cc.hidden=true;
   holes.forEach(h=>{h.of=holes.length;});   // the walk sign needs to know when the clubhouse is next
-  Object.assign(Game,{on:true,park,holes,idx:0,scores:[],strokes:0,courseKey:key,courseName:name,discIdx:0});
+  Object.assign(Game,{on:true,park,holes,idx:0,scores:[],strokes:0,courseKey:key,courseName:name,discIdx:0,loft:0});syncLoft();
   Game.tourney=null;$('#hudPos').textContent='';if(App.mode==='tournament')initTourney();
   show('game');$('#hudPark').textContent=name;renderDiscChips();loadHole(0);
 }
@@ -3727,7 +3894,7 @@ function loadHole(i){
   g.player={x:g.world.tee.x,y:g.world.tee.y,z:g.world.tee.z};
   g.discIdx=hole.par>=4?0:1;g.aim=aimToBasket();g.animT=0;g.bend=0;$('#bend').value=0;syncShape();closePanels();
   $('#hudHole').textContent='H'+hole.n;$('#hudPar').textContent='Par '+hole.par;const _tag=(hole.shape?hole.shape.short:'')+elevTag(hole);$('#hudLoc').textContent=[hole.loc,_tag].filter(Boolean).join(' · ');$('#hudLoc').hidden=!(hole.loc||_tag);$('#hudLen').textContent=Math.round(hole.len*FT);$('#hudWind').textContent=Math.round(g.wind.mph)+' mph';
-  renderDiscChips();updateHud();resetStats();replayReset();$('#btnReplay').hidden=true;cineReset();
+  renderDiscChips();updateHud();resetStats();loftHint(hole);replayReset();$('#btnReplay').hidden=true;cineReset();
   startTour();
 }
 // ---------- flyover tour ----------
@@ -3781,8 +3948,8 @@ function checkTapIn(){const g=Game;const d=distToBasket();const on=d*FT<=TAPIN_F
     // scale the putter so a 94% meter puts the disc THROUGH the chains, not on the ground beside them:
     // bisect on the disc's height above the basket base at the moment it reaches the pole.
     let lo=0.05,hi=1.6;for(let i=0;i<20;i++){const mid=(lo+hi)/2;if(puttMouthY(mid,d)<1.02)lo=mid;else hi=mid;}
-    g.puttScale=(lo+hi)/2;applyDiffToWorld();g.av.visible=false;placeCameraFP(true);$('#swingHint').textContent='Tap-in · hold, flick to putt';$('#hudLoc').textContent=Math.round(d*FT)+' ft tap-in';$('#hudLoc').hidden=false;
-  }else if(g.tapIn){g.tapIn=false;g.puttScale=1;applyDiffToWorld();g.av.visible=true;const hh=g.holes[g.idx];const lt=[hh.loc,(hh.shape?hh.shape.short:'')+elevTag(hh)].filter(Boolean).join(' · ');$('#hudLoc').textContent=lt;$('#hudLoc').hidden=!lt;}
+    g.puttScale=(lo+hi)/2;applyDiffToWorld();g.av.visible=false;placeCameraFP(true);closePanels();syncLoft();$('#swingHint').textContent='Tap-in · hold, flick to putt';$('#hudLoc').textContent=Math.round(d*FT)+' ft tap-in';$('#hudLoc').hidden=false;
+  }else if(g.tapIn){g.tapIn=false;g.puttScale=1;applyDiffToWorld();g.av.visible=true;syncLoft();const hh=g.holes[g.idx];const lt=[hh.loc,(hh.shape?hh.shape.short:'')+elevTag(hh)].filter(Boolean).join(' · ');$('#hudLoc').textContent=lt;$('#hudLoc').hidden=!lt;}
   else g.puttScale=1;}
 function fpCam(){const g=Game,d=aimDir(),p=g.player,b=g.world.basket;
   const pos=new THREE.Vector3(p.x-d.x*0.15,p.y+1.58,p.z-d.z*0.15);const look=new THREE.Vector3(b.x,b.y+1.05,b.z);return {pos,look};}
@@ -3803,16 +3970,30 @@ function updateHud(){
 }
 function renderDiscChips(){const el=$('#discs');el.innerHTML='';DISCS.forEach((d,i)=>{const b=document.createElement('button');b.className='chip'+(i===Game.discIdx?' on':'');b.innerHTML=`<i style="background:${d.color}"></i>${d.short}`;b.addEventListener('click',()=>{Game.discIdx=i;renderDiscChips();Game.previewDirty=true;setPanel('#discs','#discChip',false);});el.appendChild(b);});
   const d=DISCS[Game.discIdx];$('#discVal').textContent=d.short;$('#discSw').style.background=d.color;
-  $('#handChip').textContent=Game.hand===1?'Backhand':'Forehand';}
+  $('#handVal').textContent=Game.hand===1?'Backhand':'Forehand';}
 // The disc list and the shape slider are the same thing: a panel under a chip that reports its value.
 function setPanel(panel,chip,open){$(panel).hidden=!open;$(chip).setAttribute('aria-expanded',String(!!open));}
-function closePanels(){setPanel('#discs','#discChip',false);setPanel('#bendRow','#shapeChip',false);}
+function closePanels(){setPanel('#discs','#discChip',false);setPanel('#bendRow','#shapeChip',false);setPanel('#loftRow','#loftChip',false);}
 $('#handChip').addEventListener('click',()=>{Game.hand=-Game.hand;renderDiscChips();Game.previewDirty=true;});
 function shapeLabel(v){const n=Math.round(Math.abs(v)*100);if(n<5)return 'Flat';return (v<0?'Hyzer ':'Anhyzer ')+n;}
 function syncShape(){$('#shapeVal').textContent=shapeLabel(Game.bend);}
 $('#bend').addEventListener('input',e=>{Game.bend=+e.target.value/100;Game.previewDirty=true;syncShape();});
 $('#shapeChip').addEventListener('click',()=>{const open=$('#bendRow').hidden;closePanels();setPanel('#bendRow','#shapeChip',open);});
 $('#discChip').addEventListener('click',()=>{const open=$('#discs').hidden;closePanels();setPanel('#discs','#discChip',open);});
+// Throw height. Three settings, not a slider: a child can hit LOW / FLAT / HIGH with a thumb and see what
+// each means from the arc on the button. The value lives on Game.loft (-1, 0, +1), goes into shapeOpts()
+// for both the preview and the real throw, stays set for the whole round, and resets with the next round.
+// The physics (05-physics.js) makes a high throw climb and come down sooner: the way over a rise.
+function loftLabel(v){return v>0?'High':v<0?'Low':'Flat';}
+function syncLoft(){const v=Game.tapIn?0:(Game.loft||0);$('#loftVal').textContent=Game.tapIn?'Putt':loftLabel(v);$('#loftChip').classList.toggle('set',v!==0);$('#loftChip').disabled=!!Game.tapIn;$$('#loftRow .chip').forEach(b=>b.classList.toggle('on',+b.dataset.loft===v));}
+function setLoft(v){const g=Game;if(g.tapIn){closePanels();return;}   // a tap-in is a putt: height is not on offer
+  g.loft=Math.max(-1,Math.min(1,v||0));g.previewDirty=true;syncLoft();
+  $('#swingHint').textContent=g.loft>0?'High · shorter, clears a rise':g.loft<0?'Low · a line drive, flies longer':SWING_HINT;}
+$$('#loftRow .chip').forEach(b=>b.addEventListener('click',()=>setLoft(+b.dataset.loft)));
+$('#loftChip').addEventListener('click',()=>{const open=$('#loftRow').hidden;closePanels();setPanel('#loftRow','#loftChip',open);});
+// explained once: the first uphill tee a player ever stands on says where the control is
+function loftHint(hole){const up=hole.shape&&hole.shape.drop?hole.shape.drop*3.28084:0;
+  if(up<8||store('pdg.hint.loft'))return;store('pdg.hint.loft',1);$('#swingHint').textContent='Uphill · try Height · High';}
 // Text only, never markup: usernames, group names and server error messages all come through here,
 // and a sibling can name a group anything they like. Off the game screen the toast hides itself —
 // in a round the round's own flow hides it at the next lie.
@@ -3946,7 +4127,7 @@ function release(){
   throwDisc(power,lineErr,hyzerErr);
 }
 function throwDisc(power,err,hyzerErr){const g=Game;closePanels();g.phase='windup';syncChrome();g.animT=0;g.pending={power,err,hyzerErr};sfx('whoosh');g.preview.count=0;g.landing.visible=false;}
-function shapeOpts(extra){const g=Game;return {spin:g.hand,hyzer:g.bend*0.45*g.hand+(extra||0),loft:g.loft||0};}
+function shapeOpts(extra){const g=Game;return {spin:g.hand,hyzer:g.bend*0.45*g.hand+(extra||0),loft:g.tapIn?0:(g.loft||0)};}   // a tap-in is a putt: height does not apply
 function launch(){
   const g=Game,{power,err,hyzerErr}=g.pending;const disc=DISCS[g.discIdx];
   g.flight=launchDisc(g.player,aimDir(),disc,power,err,g.wind,g.world,Math.random,{...shapeOpts(hyzerErr),puttScale:g.tapIn?g.puttScale:1});
